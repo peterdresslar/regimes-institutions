@@ -1,11 +1,25 @@
 ;; patches: gray (city), blue (river), green (plain), brown (hill)
 
-globals [ patch-data ]
+;; we will leverage the logic from http://ccl.northwestern.edu/netlogo/models/models/Sample%20Models/Social%20Science/Ethnocentrism.nlogo
+
+globals [
+  patch-data
+  current-regime
+]
 
 to setup
   clear-all
+  initialize-variables
   load-patch-data
   show-patch-data
+  set-base-population
+  set current-regime 1
+  reset-ticks
+end
+
+
+to initialize-variables
+
 end
 
 to load-patch-data
@@ -48,12 +62,43 @@ to show-patch-data
   display
 end
 
+to set-base-population
+  ;; ask patches
+end
+
+
+to go
+  check-regime
+  emigrate
+  immigrate
+
+  ask turtles [ set ptr initial-ptr ]
+  ;; have all of the agents interact with other agents if they can
+  ask turtles [ interact ]
+  ;; now they reproduce
+  ask turtles [ reproduce ]
+
+  ask patches [ check-anchors ]
+
+  death           ;; kill some of the agents
+  update-stats    ;; update the states for the aggregate and last 100 ticks
+
+
+  tick
+end
+
+to check-regime
+  if ticks = 50 [
+      set current-regime 2
+  ]
+end
+
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
-10
-907
-708
+201
+65
+898
+763
 -1
 -1
 13.0
@@ -73,17 +118,45 @@ GRAPHICS-WINDOW
 0
 0
 1
-ticks
+years
 30.0
 
 BUTTON
-93
-101
-159
-134
+85
+66
+151
+99
 NIL
 setup
 NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+526
+10
+583
+55
+regime
+current-regime
+17
+1
+11
+
+BUTTON
+83
+110
+146
+143
+NIL
+go
+T
 1
 T
 OBSERVER
