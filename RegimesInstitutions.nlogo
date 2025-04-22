@@ -48,16 +48,15 @@ to show-patch-data
   display
 end
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
 10
-1127
-928
+907
+708
 -1
 -1
-9.0
+13.0
 1
 10
 1
@@ -67,15 +66,32 @@ GRAPHICS-WINDOW
 0
 0
 1
--50
-50
--50
-50
+-26
+26
+-26
+26
 0
 0
 1
 ticks
 30.0
+
+BUTTON
+93
+101
+159
+134
+NIL
+setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
