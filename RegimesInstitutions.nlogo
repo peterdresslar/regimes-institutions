@@ -20,6 +20,10 @@ globals [
   ethno1
   total-capacity
   current-population
+
+  ;; regime policies
+  regime-base-immigration
+
 ]
 
 to setup
@@ -29,6 +33,7 @@ to setup
   initialize-variables
   ask patches [ seed-ethno1-pops ]
   set current-regime 1
+  load-regime
   set current-population current-pop
   reset-ticks
 end
@@ -36,6 +41,10 @@ end
 to initialize-variables
   set total-capacity get-capacity
   set current-population 0
+
+  ;; regimes
+
+  set regime-base-immigration 0
 end
 
 to-report get-capacity
@@ -105,18 +114,18 @@ to seed-ethno1-pops
   let num-agents 0
   if ( is-city? )
   [
-    ;; roll 8d6
-    set num-agents ( 8 * (random 6) ) + 8
+    ;; roll 4d6
+    set num-agents ( 8 * (1 + random 6) ) / 2
   ]
   if ( is-plain? )
   [
-    ;; roll 1d6
-    set num-agents (1 + random 6)
+    ;; roll 1d3
+    set num-agents ( 1 + random 6 ) / 2
   ]
   if ( is-hill? )
   [
-    ;; flip a coin
-    set num-agents (random 2)
+    ;; flip two coins, two heads = 1 agent
+    set num-agents ( random 2 * random 2 )
   ]
   sprout num-agents [
     setup-ethno1-agent
@@ -170,6 +179,8 @@ to go
   ;;death           ;; kill some of the agents
   ;;update-stats    ;; update the states for the aggregate and last 100 ticks
 
+
+  ask patches [ update-headroom ]
   set current-population current-pop
   tick
 end
@@ -177,9 +188,11 @@ end
 ;; random individuals enter the world on empty cells
 to immigrate
   let undercap-patches patches with [headroom > 0]
-  output-print (undercap-patches)
   ;; we can't have more immigrants than there are empty patches
-  let how-many min list floor(immigration-pressure / 10) (count undercap-patches)
+  let want-to-immigrate floor((random-float 1.0) * immigration-pressure)
+  output-print want-to-immigrate
+  let can-immigrate floor( want-to-immigrate * regime-base-immigration )
+  let how-many min list (can-immigrate) (count undercap-patches)
   ask n-of how-many undercap-patches [
     sprout 1 [
       setup-ethno2-agent
@@ -190,7 +203,25 @@ end
 to check-regime
   if ticks = 50 [
       set current-regime 2
+      load-regime
   ]
+end
+
+to load-regime
+  if current-regime = 1 [
+    set regime-base-immigration .05
+  ]
+
+  if current-regime = 2 [
+    set regime-base-immigration .2
+
+  ]
+
+
+end
+
+to update-headroom
+  set headroom max-cap - ( count turtles-here )
 end
 
 to-report current-pop
@@ -278,7 +309,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-19.0
+20.0
 1
 1
 NIL
@@ -358,6 +389,24 @@ emigration-attraction
 1
 NIL
 HORIZONTAL
+
+PLOT
+25
+565
+185
+697
+density
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -8020277 true "" "plot 100 * current-population / total-capacity"
 
 @#$#@#$#@
 ## WHAT IS IT?
