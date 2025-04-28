@@ -10,28 +10,36 @@ patches-own [
   is-river?
   is-plain?
   is-hill?
+  max-cap
+  headroom
 ]
 
 globals [
   patch-data
   current-regime
   ethno1
+  total-capacity
+  current-population
 ]
 
 to setup
   clear-all
-  initialize-variables
   load-patch-data
   show-patch-data
+  initialize-variables
   ask patches [ seed-ethno1-pops ]
   set current-regime 1
+  set current-population current-pop
   reset-ticks
 end
 
-
 to initialize-variables
+  set total-capacity get-capacity
+  set current-population 0
+end
 
-
+to-report get-capacity
+  report ( count patches with [ is-city? ] * 48 ) + ( count patches with [ is-plain? ] * 6 ) + ( count patches with [ is-hill? ] * 1 )
 end
 
 to load-patch-data
@@ -54,7 +62,7 @@ to load-patch-data
       set patch-data sentence patch-data (list (list file-read file-read file-read))
     ]
 
-    user-message "File loading complete!"
+    ;; user-message "File loading complete!"
 
     ; Done reading in patch information.  Close the file.
     file-close
@@ -78,12 +86,12 @@ to show-patch-data
   ifelse ( is-list? patch-data )
     [ foreach patch-data [ three-tuple -> ask patch first three-tuple item 1 three-tuple [
       set pcolor last three-tuple
-      if ( pcolor = gray ) [ set is-city? true ]
-      if ( pcolor = blue ) [ set is-river? true ]
-      if ( pcolor = green ) [ set is-plain? true ]
-      if ( pcolor = brown ) [ set is-hill? true ]
+      if ( pcolor = 4.0 ) [ set is-city? true set max-cap 48 ]
+      if ( pcolor = 95.0 ) [ set is-river? true set max-cap 0 ]
+      if ( pcolor = 55.0 ) [ set is-plain? true set max-cap 6 ]
+      if ( pcolor = 33.0 ) [ set is-hill? true set max-cap 1 ]
       ] ] ]
-    [ user-message "You need to load in patch data first!" ]
+    [ user-message "Please load in patch data first." ]
   display
 end
 
@@ -91,23 +99,64 @@ end
 to seed-ethno1-pops
   ;; ask patches
   ;; ethno1 color: black
-  sprout 2 [
-    set color black
-    set size .5
-    ;; determine the strategy for interacting with someone of the same color
-    set cooperate-with-same? (random-float 1.0 < 1)
-    ;; determine the strategy for interacting with someone of a different color
-    set cooperate-with-different? (random-float 1.0 < 1)
-    ;; change the shape of the agent on the basis of the strategy
-
+  ;; based on the patch data, we will create num-agents agents with a certain probability
+  ;; density is 48:6:1
+  if ( is-river? ) [ stop ]  ;; stop. no agents in the river
+  let num-agents 0
+  if ( is-city? )
+  [
+    ;; roll 8d6
+    set num-agents ( 8 * (random 6) ) + 8
   ]
+  if ( is-plain? )
+  [
+    ;; roll 1d6
+    set num-agents (1 + random 6)
+  ]
+  if ( is-hill? )
+  [
+    ;; flip a coin
+    set num-agents (random 2)
+  ]
+  sprout num-agents [
+    setup-ethno1-agent
+  ]
+  ;; for the patch we need to update headroom by subtracting the number of agents
+  set headroom max-cap - (count turtles-here)
 end
 
+to setup-ethno1-agent ;;; helper, mostly for visuals
+  set color black
+  set size .3
+  ;; determine the strategy for interacting with someone of the same color
+  set cooperate-with-same? (random-float 1.0 < 1)
+  ;; determine the strategy for interacting with someone of a different color
+  set cooperate-with-different? (random-float 1.0 < 1)
+
+  ;; this offset just helps the agent be visible on the patch
+  let offset-magnitude 0.3 ;; How far from the center (max 0.5)
+  set xcor xcor + (random-float (2 * offset-magnitude)) - offset-magnitude
+  set ycor ycor + (random-float (2 * offset-magnitude)) - offset-magnitude
+end
+
+to setup-ethno2-agent ;;; helper, mostly for visuals
+  set color red
+  set size .3
+  ;; determine the strategy for interacting with someone of the same color
+  set cooperate-with-same? (random-float 1.0 < 1)
+  ;; determine the strategy for interacting with someone of a different color
+  set cooperate-with-different? (random-float 1.0 < 1)
+
+  ;; this offset just helps the agent be visible on the patch
+  let offset-magnitude 0.3 ;; How far from the center (max 0.5)
+  set xcor xcor + (random-float (2 * offset-magnitude)) - offset-magnitude
+  set ycor ycor + (random-float (2 * offset-magnitude)) - offset-magnitude
+end
 
 to go
   check-regime
 
-  ;;immigrate
+  immigrate
 
  ;; ask turtles [ set ptr initial-ptr ]
   ;; have all of the agents interact with other agents if they can
@@ -121,14 +170,31 @@ to go
   ;;death           ;; kill some of the agents
   ;;update-stats    ;; update the states for the aggregate and last 100 ticks
 
-
+  set current-population current-pop
   tick
+end
+
+;; random individuals enter the world on empty cells
+to immigrate
+  let undercap-patches patches with [headroom > 0]
+  output-print (undercap-patches)
+  ;; we can't have more immigrants than there are empty patches
+  let how-many min list floor(immigration-pressure / 10) (count undercap-patches)
+  ask n-of how-many undercap-patches [
+    sprout 1 [
+      setup-ethno2-agent
+    ]
+  ]
 end
 
 to check-regime
   if ticks = 50 [
       set current-regime 2
   ]
+end
+
+to-report current-pop
+  report count turtles
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -204,15 +270,15 @@ NIL
 1
 
 SLIDER
-23
-267
-213
-300
+10
+264
+200
+297
 immigration-pressure
 immigration-pressure
 0
 100
-50.0
+19.0
 1
 1
 NIL
@@ -279,10 +345,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-18
-309
-205
-342
+5
+305
+192
+338
 emigration-attraction
 emigration-attraction
 0
