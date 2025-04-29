@@ -280,8 +280,8 @@ to interact  ;; turtle procedure
       ifelse [cooperate-with-different?] of myself [
         set coopother coopother + 1
         set coopother-agg coopother-agg + 1
-        ask myself [ set ptr (( ptr - cost-of-giving) * regime-cost-coop)) ]
-        set ptr (( ptr + gain-of-receiving ) * regime-gain-coop))
+        ask myself [ set ptr (( ptr - cost-of-giving) * regime-cost-coop) ]
+        set ptr (( ptr + gain-of-receiving ) * regime-gain-coop)
       ]
       [
         set defother defother + 1
