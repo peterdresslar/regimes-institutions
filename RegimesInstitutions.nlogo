@@ -43,6 +43,8 @@ globals [
   regime-gain-coop
   regime-coop-1-2
   regime-coop-2-1
+  regime-same-policy
+  regime-different-policy
 
 ]
 
@@ -51,9 +53,9 @@ to setup
   load-patch-data
   show-patch-data
   initialize-variables
-  ask patches [ seed-ethno1-pops ]
   set current-regime 1
   load-regime
+  ask patches [ seed-ethno1-pops ]
   set current-population current-pop
   reset-ticks
 end
@@ -70,6 +72,8 @@ to initialize-variables
   set regime-gain-coop 0
   set regime-coop-1-2 0
   set regime-coop-2-1 0
+  set regime-same-policy 0
+  set regime-different-policy 0
 
 
   ;; ethno stats
@@ -178,9 +182,9 @@ to setup-ethno1-agent ;;; helper, mostly for visuals
   set color black
   set size .3
   ;; determine the strategy for interacting with someone of the same color
-  set cooperate-with-same? (random-float 1.0 < .5)
+  set cooperate-with-same? ((random-float 1.0) < regime-same-policy)
   ;; determine the strategy for interacting with someone of a different color
-  set cooperate-with-different? (random-float 1.0 < .5)
+  set cooperate-with-different? ((random-float 1.0) < regime-different-policy)
 
   ;; this offset just helps the agent be visible on the patch
   let offset-magnitude 0.3 ;; How far from the center (max 0.5)
@@ -250,9 +254,25 @@ to emigrate
 end
 
 to interact  ;; turtle procedure
+  ;; Dresslar: this code is entirely borrowed from Ethnocentrism, with the goal of maintaining some fidelity to that modelʻs
+  ;; approach. The changes are to ask turtles on-patch and neighbors. We also dampen benefit on very crowded patches.
+  ;; Finally, we have a modification on the impact of cooperation based upon what the regime currently is.
 
-  ;; interact with patch neighborhood, including self patch. we do this so that hill folk can talk to neighboring patches
-  ask up-to-n-of 6 turtles at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1]] [
+  ;; based on patch type turtles are given a maximum number of interactions per turn (distance between interactions)
+  let current-patch patch-here
+  let max-interactions 0
+  let crowding 0.001
+  if [ is-city? ] of current-patch [
+    set max-interactions 6
+  ]
+  if [ is-plain? ] of current-patch [
+    set max-interactions 2
+  ]
+  if [ is-hill? ] of current-patch [
+    set max-interactions 1
+  ]
+
+  ask up-to-n-of max-interactions turtles at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] [
     ;; the commands inside the ASK are written from the point of view
     ;; of the agent being interacted with.  To refer back to the agent
     ;; that initiated the interaction, we use the MYSELF primitive.
@@ -268,7 +288,7 @@ to interact  ;; turtle procedure
         set coopown coopown + 1
         set coopown-agg coopown-agg + 1
         ask myself [ set ptr ptr - cost-of-giving ]
-        set ptr ptr + gain-of-receiving
+        set ptr ptr + (gain-of-receiving)
       ]
     ]
     ;; if we are different colors we take a different strategy
@@ -280,8 +300,8 @@ to interact  ;; turtle procedure
       ifelse [cooperate-with-different?] of myself [
         set coopother coopother + 1
         set coopother-agg coopother-agg + 1
-        ask myself [ set ptr (( ptr - cost-of-giving) * regime-cost-coop) ]
-        set ptr (( ptr + gain-of-receiving ) * regime-gain-coop)
+        ask myself [ set ptr (ptr - (cost-of-giving * regime-cost-coop)) ] ;; Dresslar: regime modifier
+        set ptr (ptr + ((gain-of-receiving * regime-gain-coop)))             ;; Dresslar: regime modifier
       ]
       [
         set defother defother + 1
@@ -302,6 +322,8 @@ to reproduce  ;; turtle procedure
       hatch 1 [
         move-to destination
 
+        set cooperate-with-same? (random-float 1.0 < .5)  ;; deal with cooperators dying out automatically
+
         ;; this offset just helps the agent be visible on the patch
         let offset-magnitude 0.3 ;; How far from the center (max 0.5)
         set xcor xcor + (random-float (2 * offset-magnitude)) - offset-magnitude
@@ -317,7 +339,10 @@ end
 to death
   ;; check to see if a random variable is less than the death rate for each agent
   ask turtles [
-    if random-float 1.0 < death-rate [
+    let crowding-ratio max(list 0.5 (current-population / total-capacity) )
+    ;;let crowding (crowding-ratio - 0.5) ^ 6
+    let crowding 0
+    if random-float 1.0 < (death-rate + crowding) [
       die
       ask patch-here [ update-headroom ]
     ]
@@ -325,7 +350,7 @@ to death
 end
 
 to check-regime
-  if ticks = 50 [
+  if ticks = 50 * 365 [
       set current-regime 2
       load-regime
   ]
@@ -339,6 +364,8 @@ to load-regime
     set regime-gain-coop 1
     set regime-coop-1-2 1
     set regime-coop-2-1 1
+    set regime-same-policy 0.8
+    set regime-different-policy .02
 
   ]
 
@@ -349,7 +376,8 @@ to load-regime
     set regime-gain-coop 0.75
     set regime-coop-1-2 1
     set regime-coop-2-1 1
-
+    set regime-same-policy 0.8
+    set regime-different-policy .20
 
   ]
 
@@ -388,7 +416,7 @@ GRAPHICS-WINDOW
 0
 0
 1
-years
+days
 30.0
 
 BUTTON
@@ -445,7 +473,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-6.0
+57.0
 1
 1
 NIL
@@ -460,7 +488,7 @@ base-PTR
 base-PTR
 0.01
 1
-0.12
+0.11
 0.01
 1
 NIL
@@ -475,7 +503,7 @@ cost-of-giving
 cost-of-giving
 0.01
 1
-0.03
+0.02
 0.01
 1
 NIL
@@ -490,7 +518,7 @@ gain-of-receiving
 gain-of-receiving
 0.01
 1
-0.08
+0.06
 0.01
 1
 NIL
@@ -505,7 +533,7 @@ institutional-pressure
 institutional-pressure
 0
 100
-50.0
+48.0
 1
 1
 NIL
@@ -520,7 +548,7 @@ emigration-pressure
 emigration-pressure
 0
 100
-20.0
+10.0
 1
 1
 NIL
@@ -553,11 +581,49 @@ death-rate
 death-rate
 .01
 1
-0.14
+0.1
 .01
 1
 NIL
 HORIZONTAL
+
+PLOT
+964
+216
+1164
+366
+ethnicity counts
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles with [ color = black ]"
+"pen-1" 1.0 0 -5298144 true "" "plot count turtles with [ color = red ]"
+
+PLOT
+966
+441
+1243
+629
+cooperators
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"with-same?" 1.0 0 -13840069 true "" "plot count turtles with [ cooperate-with-same? = true ]"
+"with-different?" 1.0 0 -4699768 true "" "plot count turtles with [ cooperate-with-different? = true ]"
 
 @#$#@#$#@
 ## WHAT IS IT?
