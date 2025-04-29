@@ -350,7 +350,7 @@ to death
 end
 
 to check-regime
-  if ticks = 50 * 365 [
+  if ticks = 1000 [
       set current-regime 2
       load-regime
   ]
@@ -366,6 +366,10 @@ to load-regime
     set regime-coop-2-1 1
     set regime-same-policy 0.8
     set regime-different-policy .02
+    ask turtles with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+
 
   ]
 
@@ -378,6 +382,10 @@ to load-regime
     set regime-coop-2-1 1
     set regime-same-policy 0.8
     set regime-different-policy .20
+    ask turtles with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+
 
   ]
 
@@ -473,7 +481,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-57.0
+25.0
 1
 1
 NIL
@@ -518,7 +526,7 @@ gain-of-receiving
 gain-of-receiving
 0.01
 1
-0.06
+0.1
 0.01
 1
 NIL
@@ -581,7 +589,7 @@ death-rate
 death-rate
 .01
 1
-0.1
+0.14
 .01
 1
 NIL
