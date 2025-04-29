@@ -10,6 +10,7 @@ breed [ institutions institution ]
 
 
 people-own [ ptr cooperate-with-same? cooperate-with-different? ]
+institutions-own [ tick-of-birth level ]
 
 patches-own [
   is-city?
@@ -18,15 +19,18 @@ patches-own [
   is-hill?
   max-cap
   headroom
+  has-institution?
+  ethno2-ticks
 ]
 
 globals [
   patch-data
   current-regime
-  ethno1
+  current-regime-message
+  ethno1-pop
+  ethno2-pop
   total-capacity
   current-population
-
 
   ;; from ethocentrism stats
   meet
@@ -54,9 +58,9 @@ globals [
 
   ;; institutions
   formation-time
-  formation-threshhold
+  formation-threshold
   upgrade-time
-  upgrade-threshhold
+  upgrade-threshold
   community-radius
 
 ]
@@ -78,13 +82,13 @@ to initialize-variables
   set current-population 0
 
   set formation-time 3
-  set formation-threshhold 10
+  set formation-threshold 10
   set upgrade-time 200
-  set upgrade-threshhold 50
+  set upgrade-threshold 50
   set community-radius 10
 
   ;; regimes
-
+  set current-regime-message "Long Live The King."
   set regime-base-immigration 0
   set regime-base-emigration 0
   set regime-cost-coop 0
@@ -146,6 +150,8 @@ to show-patch-data
     set is-river? false
     set is-plain? false
     set is-hill? false
+    set ethno2-ticks 0
+    set has-institution? false
   ]
 
   ifelse ( is-list? patch-data )
@@ -229,7 +235,7 @@ to go
   ;; now they reproduce
   ask people [ reproduce ]
 
-  ;; ask patches [ check-anchors ]
+  check-institutions ;; call to review institution formation and status
 
   emigrate
   death           ;; kill some of the agents
@@ -266,7 +272,7 @@ to emigrate
 end
 
 to interact  ;; person procedure
-  ;; Dresslar: this code is entirely borrowed from Ethnocentrism, with the goal of maintaining some fidelity to that modelʻs
+  ;; Dresslar: this code is signifcantly borrowed from Ethnocentrism, with the goal of maintaining some fidelity to that modelʻs
   ;; approach. The changes are to ask people on-patch and neighbors. We also dampen benefit on very crowded patches.
   ;; Finally, we have a modification on the impact of cooperation based upon what the regime currently is.
 
@@ -284,7 +290,7 @@ to interact  ;; person procedure
     set max-interactions 1
   ]
 
-  ask up-to-n-of max-interactions people at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] [
+  ask up-to-n-of max-interactions people at-points [ [0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] [
     ;; the commands inside the ASK are written from the point of view
     ;; of the agent being interacted with.  To refer back to the agent
     ;; that initiated the interaction, we use the MYSELF primitive.
@@ -361,6 +367,36 @@ to death
   ]
 end
 
+to check-institutions ;; observer procedure
+  ask patches with [ not is-river? and not has-institution? ] [
+    ;; count ethno2 nearby
+    let ethno2-here people at-points [ [0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] with [ color = red ]
+    let num-ethno2 count ethno2-here
+
+    ;; Check if threshold is met
+    ifelse num-ethno2 >= formation-threshold [
+      ;; If met, increment the counter
+      set ethno2-ticks ethno2-ticks + 1
+    ] [
+      ;; If not met, reset the counter
+      set ethno2-ticks 0
+    ]
+
+    ;; Check if formation time is reached
+    if ethno2-ticks >= formation-time [
+      sprout-institutions 1 [
+        set shape "house"
+        set size .8  ;; Adjust size as needed
+        set color white ;; Or another color to distinguish
+        ;; Institutions don't move, so no need for random offset
+      ]
+      set has-institution? true
+      set ethno2-ticks 0 ;; Reset counter after formation
+    ]
+  ]
+
+end
+
 to check-regime
   if ticks = 1000 [
       set current-regime 2
@@ -370,6 +406,7 @@ end
 
 to load-regime
   if current-regime = 1 [
+    set current-regime-message "His Majesty sees no reason to allow ethnicity2 to sully His Kingdom"
     set regime-base-immigration .05
     set regime-base-emigration 1
     set regime-cost-coop 1
@@ -386,6 +423,7 @@ to load-regime
   ]
 
   if current-regime = 2 [
+    set current-regime-message "His Majesty II will allow ethnicity2 to settle in certain areas of His Kingdom. They must follow His Edicts."
     set regime-base-immigration .2
     set regime-base-emigration .1
     set regime-cost-coop 1.25
@@ -457,10 +495,10 @@ NIL
 1
 
 MONITOR
-526
-10
-583
-55
+199
+13
+256
+58
 regime
 current-regime
 17
@@ -642,8 +680,19 @@ true
 true
 "" ""
 PENS
-"with-same?" 1.0 0 -13840069 true "" "plot count turtles with [ cooperate-with-same? = true ]"
-"with-different?" 1.0 0 -4699768 true "" "plot count turtles with [ cooperate-with-different? = true ]"
+"with-same?" 1.0 0 -13840069 true "" "plot count people with [ cooperate-with-same? = true ]"
+"with-different?" 1.0 0 -4699768 true "" "plot count people with [ cooperate-with-different? = true ]"
+
+MONITOR
+271
+13
+897
+58
+Hear Ye! Hear Ye!
+current-regime-message
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
