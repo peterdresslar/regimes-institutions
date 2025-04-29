@@ -46,6 +46,13 @@ globals [
   regime-same-policy
   regime-different-policy
 
+  ;; institutions
+  formation-time
+  formation-threshold
+  upgrade-time
+  upgrade-threshhold
+  community-radius
+
 ]
 
 to setup
@@ -63,6 +70,12 @@ end
 to initialize-variables
   set total-capacity get-capacity
   set current-population 0
+
+  set formation-time 3
+  set formation-threshhold 10
+  set upgrade-time 200
+  set upgrade-threshhold 50
+  set community-radius 10
 
   ;; regimes
 
@@ -96,28 +109,21 @@ to-report get-capacity
 end
 
 to load-patch-data
-
-  ; We check to make sure the file exists first
+  ; Check to make sure the file exists first
   ifelse ( file-exists? "cluj-data.txt" )
   [
-    ; We are saving the data into a list, so it only needs to be loaded once.
     set patch-data []
-
-    ; This opens the file, so we can use it.
     file-open "cluj-data.txt"
 
-    ; Read in all the data in the file
     while [ not file-at-end? ]
     [
-      ; file-read gives you variables.  In this case numbers.
-      ; We store them in a double list (ex [[1 1 9.9999] [1 2 9.9999] ...
-      ; Each iteration we append the next three-tuple to the current list
+      ;; file-read gives you variables.  In this case numbers.
+      ;; We store them in a nested list (eg [[1 1 9.9999] [1 2 9.9999] ... )
+      ;; Each iteration we append the next nested item to the current list
       set patch-data sentence patch-data (list (list file-read file-read file-read))
     ]
 
     ;; user-message "File loading complete!"
-
-    ; Done reading in patch information.  Close the file.
     file-close
   ]
   [ user-message "There is no cluj-data.txt file in current directory!" ]
@@ -180,7 +186,7 @@ end
 
 to setup-ethno1-agent ;;; helper, mostly for visuals
   set color black
-  set size .3
+  set size .4
   ;; determine the strategy for interacting with someone of the same color
   set cooperate-with-same? ((random-float 1.0) < regime-same-policy)
   ;; determine the strategy for interacting with someone of a different color
@@ -194,7 +200,7 @@ end
 
 to setup-ethno2-agent ;;; helper, mostly for visuals
   set color red
-  set size .3
+  set size .4
   ;; determine the strategy for interacting with someone of the same color
   set cooperate-with-same? (random-float 1.0 < .5)
   ;; determine the strategy for interacting with someone of a different color
@@ -584,7 +590,7 @@ SLIDER
 18
 226
 191
-260
+259
 death-rate
 death-rate
 .01
