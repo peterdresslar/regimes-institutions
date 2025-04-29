@@ -252,7 +252,7 @@ end
 to interact  ;; turtle procedure
 
   ;; interact with patch neighborhood, including self patch. we do this so that hill folk can talk to neighboring patches
-  ask up-to-n-of 4 turtles at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1]] [
+  ask up-to-n-of 6 turtles at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1]] [
     ;; the commands inside the ASK are written from the point of view
     ;; of the agent being interacted with.  To refer back to the agent
     ;; that initiated the interaction, we use the MYSELF primitive.
@@ -445,7 +445,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-20.0
+6.0
 1
 1
 NIL
@@ -475,7 +475,7 @@ cost-of-giving
 cost-of-giving
 0.01
 1
-0.01
+0.03
 0.01
 1
 NIL
@@ -490,7 +490,7 @@ gain-of-receiving
 gain-of-receiving
 0.01
 1
-0.03
+0.08
 0.01
 1
 NIL
@@ -553,7 +553,7 @@ death-rate
 death-rate
 .01
 1
-0.12
+0.14
 .01
 1
 NIL
