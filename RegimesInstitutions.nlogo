@@ -21,8 +21,24 @@ globals [
   total-capacity
   current-population
 
+
+  ;; from ethocentrism stats
+  meet
+  meet-agg
+  meetown
+  meetown-agg
+  meetother
+  meetother-agg
+  coopown
+  coopown-agg
+  coopother
+  coopother-agg
+  defother
+  defother-agg
+
   ;; regime policies
   regime-base-immigration
+  regime-base-emigration
 
 ]
 
@@ -45,6 +61,21 @@ to initialize-variables
   ;; regimes
 
   set regime-base-immigration 0
+  set regime-base-emigration 0
+
+  ;; ethno stats
+  set meetown 0
+  set meetown-agg 0
+  set meet 0
+  set meet-agg 0
+  set coopown 0
+  set coopown-agg 0
+  set defother 0
+  set defother-agg 0
+  set meetother 0
+  set meetother-agg 0
+  set coopother 0
+  set coopother-agg 0
 end
 
 to-report get-capacity
@@ -138,9 +169,9 @@ to setup-ethno1-agent ;;; helper, mostly for visuals
   set color black
   set size .3
   ;; determine the strategy for interacting with someone of the same color
-  set cooperate-with-same? (random-float 1.0 < 1)
+  set cooperate-with-same? (random-float 1.0 < .5)
   ;; determine the strategy for interacting with someone of a different color
-  set cooperate-with-different? (random-float 1.0 < 1)
+  set cooperate-with-different? (random-float 1.0 < .5)
 
   ;; this offset just helps the agent be visible on the patch
   let offset-magnitude 0.3 ;; How far from the center (max 0.5)
@@ -152,9 +183,9 @@ to setup-ethno2-agent ;;; helper, mostly for visuals
   set color red
   set size .3
   ;; determine the strategy for interacting with someone of the same color
-  set cooperate-with-same? (random-float 1.0 < 1)
+  set cooperate-with-same? (random-float 1.0 < .5)
   ;; determine the strategy for interacting with someone of a different color
-  set cooperate-with-different? (random-float 1.0 < 1)
+  set cooperate-with-different? (random-float 1.0 < .5)
 
   ;; this offset just helps the agent be visible on the patch
   let offset-magnitude 0.3 ;; How far from the center (max 0.5)
@@ -167,16 +198,16 @@ to go
 
   immigrate
 
- ;; ask turtles [ set ptr initial-ptr ]
+  ask turtles [ set ptr base-ptr ]
   ;; have all of the agents interact with other agents if they can
-  ;;ask turtles [ interact ]
+  ask turtles [ interact ]
   ;; now they reproduce
-  ;;ask turtles [ reproduce ]
+  ask turtles [ reproduce ]
 
-  ;;ask patches [ check-anchors ]
+  ;; ask patches [ check-anchors ]
 
-  ;;emigrate
-  ;;death           ;; kill some of the agents
+  emigrate
+  death           ;; kill some of the agents
   ;;update-stats    ;; update the states for the aggregate and last 100 ticks
 
 
@@ -190,12 +221,91 @@ to immigrate
   let undercap-patches patches with [headroom > 0]
   ;; we can't have more immigrants than there are empty patches
   let want-to-immigrate floor((random-float 1.0) * immigration-pressure)
-  output-print want-to-immigrate
   let can-immigrate floor( want-to-immigrate * regime-base-immigration )
   let how-many min list (can-immigrate) (count undercap-patches)
   ask n-of how-many undercap-patches [
     sprout 1 [
       setup-ethno2-agent
+      ask patch-here [ update-headroom ]
+    ]
+  ]
+end
+
+to emigrate
+  let want-to-emigrate ceiling((random-float 1.0) * emigration-pressure)
+  let need-emigrate ceiling(want-to-emigrate * regime-base-emigration)
+  ask up-to-n-of need-emigrate turtles with [ color = red ] [
+    die
+    ask patch-here [ update-headroom ]
+  ]
+end
+
+to interact  ;; turtle procedure
+
+  ;; interact with patch neighborhood, including self patch. we do this so that hill folk can talk to neighboring patches
+  ask up-to-n-of 4 turtles at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1]] [
+    ;; the commands inside the ASK are written from the point of view
+    ;; of the agent being interacted with.  To refer back to the agent
+    ;; that initiated the interaction, we use the MYSELF primitive.
+    set meet meet + 1
+    set meet-agg meet-agg + 1
+    ;; do one thing if the individual interacting is the same color as me
+    if color = [color] of myself [
+      ;; record the fact the agent met someone of the own color
+      set meetown meetown + 1
+      set meetown-agg meetown-agg + 1
+      ;; if I cooperate then I reduce my PTR and increase my neighbors
+      if [cooperate-with-same?] of myself [
+        set coopown coopown + 1
+        set coopown-agg coopown-agg + 1
+        ask myself [ set ptr ptr - cost-of-giving ]
+        set ptr ptr + gain-of-receiving
+      ]
+    ]
+    ;; if we are different colors we take a different strategy
+    if color != [color] of myself [
+      ;; record stats on encounters
+      set meetother meetother + 1
+      set meetother-agg meetother-agg + 1
+      ;; if we cooperate with different colors then reduce our PTR and increase our neighbors
+      ifelse [cooperate-with-different?] of myself [
+        set coopother coopother + 1
+        set coopother-agg coopother-agg + 1
+        ask myself [ set ptr ptr - cost-of-giving ]
+        set ptr ptr + gain-of-receiving
+      ]
+      [
+        set defother defother + 1
+        set defother-agg defother-agg + 1
+      ]
+    ]
+  ]
+end
+
+;; use PTR to determine if the agent gets to reproduce
+to reproduce  ;; turtle procedure
+  ;; if a random variable is less than the PTR the agent can reproduce
+  if random-float 1.0 < ptr [
+    ;; find an empty location to reproduce into
+    let destination one-of neighbors4 with [headroom > 0]
+    if destination != nobody [
+      ;; if the location exists hatch a copy of the current turtle in the new location
+      ;;  but mutate the child
+      hatch 1 [
+        move-to destination
+        ask patch-here [ update-headroom ]
+        ;; mutate   (no mutation in this model, yet.)
+      ]
+    ]
+  ]
+end
+
+to death
+  ;; check to see if a random variable is less than the death rate for each agent
+  ask turtles [
+    if random-float 1.0 < death-rate [
+      die
+      ask patch-here [ update-headroom ]
     ]
   ]
 end
@@ -210,10 +320,12 @@ end
 to load-regime
   if current-regime = 1 [
     set regime-base-immigration .05
+    set regime-base-emigration 1
   ]
 
   if current-regime = 2 [
     set regime-base-immigration .2
+    set regime-base-emigration .1
 
   ]
 
@@ -322,10 +434,10 @@ SLIDER
 215
 base-PTR
 base-PTR
-0
-100
-50.0
+0.01
 1
+0.12
+0.01
 1
 NIL
 HORIZONTAL
@@ -337,10 +449,10 @@ SLIDER
 406
 cost-of-giving
 cost-of-giving
-0
-100
-50.0
+0.01
 1
+0.01
+0.01
 1
 NIL
 HORIZONTAL
@@ -352,10 +464,10 @@ SLIDER
 446
 gain-of-receiving
 gain-of-receiving
-0
-100
-50.0
+0.01
 1
+0.03
+0.01
 1
 NIL
 HORIZONTAL
@@ -380,11 +492,11 @@ SLIDER
 305
 192
 338
-emigration-attraction
-emigration-attraction
+emigration-pressure
+emigration-pressure
 0
 100
-50.0
+20.0
 1
 1
 NIL
@@ -407,6 +519,21 @@ false
 "" ""
 PENS
 "default" 1.0 0 -8020277 true "" "plot 100 * current-population / total-capacity"
+
+SLIDER
+18
+226
+191
+260
+death-rate
+death-rate
+.01
+1
+0.1
+.01
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
