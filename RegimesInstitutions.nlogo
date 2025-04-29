@@ -255,17 +255,125 @@ to go
   tick
 end
 
-;; random individuals enter the world on empty cells
+;; individuals of ethno2 enter world under certain regime-influenced conditions
 to immigrate
-  let undercap-patches patches with [headroom > 0]
+  let undercap-patches patches with [ headroom > 0 ]
   ;; we can't have more immigrants than there are empty patches
-  let want-to-immigrate floor((random-float 1.0) * (immigration-pressure + institution-power))
+  let world-crowding ( current-population / total-capacity ) ^ 6
+  let want-to-immigrate floor( (random-float ( 1.0  - world-crowding ) ) * (immigration-pressure + institution-power))
   let can-immigrate floor( want-to-immigrate * regime-base-immigration )
-  let how-many min list (can-immigrate) (count undercap-patches)
-  ask n-of how-many undercap-patches [
-    sprout-people 1 [
-      setup-ethno2-agent
-      ask patch-here [ update-headroom ]
+  let how-many min list ( can-immigrate ) ( count undercap-patches )
+
+  ;; Check if there are institutions yet
+  ifelse any? institutions [
+    ;; Get a random institution and its location
+    let some-institution one-of institutions
+    let institution-x [xcor] of some-institution
+    let institution-y [ycor] of some-institution
+
+    ;; Try to place immigrants around institutions first
+    let immigrants-placed 0
+    repeat how-many [
+      ;; Set a cap on placement attempts to avoid infinite loops
+      let max-attempts 50
+      let success? false
+
+      repeat max-attempts [
+        if not success? [
+          ;; Calculate a location with normal distribution around institution
+          let dist random-normal community-radius (community-radius / 3)
+          let angle random-float 360
+          let new-x institution-x + (dist * cos angle)
+          let new-y institution-y + (dist * sin angle)
+
+          ;; Check if patch exists and has headroom
+          let target-patch patch new-x new-y
+          if target-patch != nobody and [headroom > 0] of target-patch [
+            ask target-patch [
+              sprout-people 1 [
+                setup-ethno2-agent
+                ask patch-here [update-headroom]
+              ]
+            ]
+            set success? true
+            set immigrants-placed immigrants-placed + 1
+          ]
+        ]
+      ]
+
+      ;; If placement failed after max attempts, stop trying to avoid hanging
+      if not success? [stop]
+    ]
+
+    ;; If some immigrants couldn't be placed near institutions, place them randomly
+    if immigrants-placed < how-many [
+      let remaining how-many - immigrants-placed
+      ask n-of (min list remaining (count undercap-patches)) undercap-patches [
+        sprout-people 1 [
+          setup-ethno2-agent
+          ask patch-here [update-headroom]
+        ]
+      ]
+    ]
+  ]
+  [
+    ;; No institutions yet, use the old method of random placement
+        ifelse any? people with [color = red] [
+      ;; Cluster around existing ethno2 people
+      let center-person one-of people with [color = red]
+      let center-x [xcor] of center-person
+      let center-y [ycor] of center-person
+
+      ;; Same placement logic but around existing ethno2 people
+      let immigrants-placed 0
+      repeat how-many [
+        let max-attempts 50
+        let success? false
+
+        repeat max-attempts [
+          if not success? [
+            ;; Use a smaller clustering radius for ethno2 groups
+            let dist random-normal 5 2
+            let angle random-float 360
+            let new-x center-x + (dist * cos angle)
+            let new-y center-y + (dist * sin angle)
+
+            let target-patch patch new-x new-y
+            if target-patch != nobody and [headroom > 0] of target-patch [
+              ask target-patch [
+                sprout-people 1 [
+                  setup-ethno2-agent
+                  ask patch-here [update-headroom]
+                ]
+              ]
+              set success? true
+              set immigrants-placed immigrants-placed + 1
+            ]
+          ]
+        ]
+
+        if not success? [stop]
+      ]
+
+      ;; Place remaining randomly if needed
+      if immigrants-placed < how-many [
+        let remaining how-many - immigrants-placed
+        ask n-of (min list remaining (count undercap-patches)) undercap-patches [
+          sprout-people 1 [
+            setup-ethno2-agent
+            ask patch-here [update-headroom]
+          ]
+        ]
+      ]
+    ]
+    [
+      ;; No ethno2 people yet, place randomly
+      ask n-of how-many undercap-patches [
+        sprout-people 1 [
+          setup-ethno2-agent
+          ask patch-here [update-headroom]
+        ]
+      ]
     ]
   ]
 end
@@ -289,10 +397,10 @@ to interact  ;; person procedure
   let max-interactions 0
   let crowding 0.001
   if [ is-city? ] of current-patch [
-    set max-interactions 6
+    set max-interactions 8
   ]
   if [ is-plain? ] of current-patch [
-    set max-interactions 2
+    set max-interactions 3
   ]
   if [ is-hill? ] of current-patch [
     set max-interactions 1
@@ -304,6 +412,10 @@ to interact  ;; person procedure
     ;; that initiated the interaction, we use the MYSELF primitive.
     set meet meet + 1
     set meet-agg meet-agg + 1
+
+    ifelse ( color = black ) [let ethno-myself ethno1] [let ethno-myself ethno2]
+    let my-ticks [ethno2-ticks] of patch-here
+
     ;; do one thing if the individual interacting is the same color as me
     if color = [color] of myself [
       ;; record the fact the agent met someone of the own color
@@ -478,7 +590,7 @@ to load-regime
  if current-regime = 3 [
   set current-regime-message "Emperor Joseph II declares tolerance for all religious and ethnic minorities, but they must serve His greater glory."
   set regime-base-immigration 0.3    ;; More open to immigration
-  set regime-base-emigration 0.3     ;; Some control but not preventing movement
+  set regime-base-emigration 0.1     ;; Some control but not preventing movement
   set regime-cost-coop 0.8           ;; Lower cost for cooperation (incentivized)
   set regime-gain-coop 1.2           ;; Higher benefit for cooperation
   set regime-coop-1-2 1.1            ;; Slightly favor black-to-red cooperation
@@ -591,7 +703,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-25.0
+20.0
 1
 1
 NIL
@@ -666,7 +778,7 @@ emigration-pressure
 emigration-pressure
 0
 100
-10.0
+20.0
 1
 1
 NIL
@@ -740,8 +852,8 @@ true
 true
 "" ""
 PENS
-"with-same?" 1.0 0 -13840069 true "" "plot count people with [ cooperate-with-same? = true ]"
-"with-different?" 1.0 0 -4699768 true "" "plot count people with [ cooperate-with-different? = true ]"
+"with-same?" 1.0 0 -13840069 true "" "plot (count people with [ cooperate-with-same? = true ]) / (count people) * 100"
+"with-different?" 1.0 0 -4699768 true "" "plot (count people with [ cooperate-with-different? = true ]) / (count people) * 100"
 
 MONITOR
 263
