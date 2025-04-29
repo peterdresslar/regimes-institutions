@@ -57,6 +57,7 @@ globals [
   regime-coop-2-1
   regime-same-policy
   regime-different-policy
+  regime-institution-policy
 
   ;; institutions
   formation-time
@@ -83,11 +84,11 @@ to initialize-variables
   set total-capacity get-capacity
   set current-population 0
 
-  set formation-time 3
+  set formation-time 5
   set formation-threshold 10
   set upgrade-time 200
   set upgrade-threshold 50
-  set community-radius 10
+  set community-radius 20
   set institution-power 0
 
   ;; regimes
@@ -100,7 +101,7 @@ to initialize-variables
   set regime-coop-2-1 0
   set regime-same-policy 0
   set regime-different-policy 0
-
+  set regime-institution-policy 0
 
   ;; ethno stats
   set meetown 0
@@ -297,7 +298,7 @@ to interact  ;; person procedure
     set max-interactions 1
   ]
 
-  ask up-to-n-of max-interactions people at-points [ [0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] [
+  ask up-to-n-of max-interactions people in-radius 1.5 [
     ;; the commands inside the ASK are written from the point of view
     ;; of the agent being interacted with.  To refer back to the agent
     ;; that initiated the interaction, we use the MYSELF primitive.
@@ -394,20 +395,21 @@ end
 to check-institutions ;; observer procedure
   ask patches with [ not is-river? and not has-institution? and served-by-institution = 0] [
     ;; count ethno2 nearby
-    let ethno2-here people at-points [ [0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] with [ color = red ]
+    let ethno2-here people in-radius 1.5 with [color = red]
     let num-ethno2 count ethno2-here
 
     ;; Check if threshold is met
-    ifelse num-ethno2 >= formation-threshold [
+    ifelse num-ethno2 >= (formation-threshold + regime-institution-policy) [
       ;; If met, increment the counter
       set ethno2-ticks ethno2-ticks + 1
+      output-print (word "patch " self " has " num-ethno2 " ethno2")
     ] [
       ;; If not met, reset the counter
       set ethno2-ticks 0
     ]
 
     ;; Check if formation time is reached
-    if ethno2-ticks >= formation-time [
+    if ethno2-ticks >= formation-time and served-by-institution = 0 [   ;; must ask again in specfic context due to agentset processing
       sprout-institutions 1 [
         set shape "house"
         set size .8
@@ -430,8 +432,12 @@ to check-institutions ;; observer procedure
 end
 
 to check-regime
-  if ticks = 1000 [
+  if ticks = 100 [
       set current-regime 2
+      load-regime
+  ]
+  if ticks = 200 [
+      set current-regime 3
       load-regime
   ]
 end
@@ -447,11 +453,10 @@ to load-regime
     set regime-coop-2-1 1
     set regime-same-policy 0.8
     set regime-different-policy .02
+    set regime-institution-policy 999
     ask people with [ color = black ] [
       set cooperate-with-different? (random-float 1.0 < regime-different-policy)
     ]
-
-
   ]
 
   if current-regime = 2 [
@@ -464,12 +469,27 @@ to load-regime
     set regime-coop-2-1 1
     set regime-same-policy 0.8
     set regime-different-policy .20
+    set regime-institution-policy 20
     ask people with [ color = black ] [
       set cooperate-with-different? (random-float 1.0 < regime-different-policy)
     ]
-
-
   ]
+
+ if current-regime = 3 [
+  set current-regime-message "Emperor Joseph II declares tolerance for all religious and ethnic minorities, but they must serve His greater glory."
+  set regime-base-immigration 0.3    ;; More open to immigration
+  set regime-base-emigration 0.3     ;; Some control but not preventing movement
+  set regime-cost-coop 0.8           ;; Lower cost for cooperation (incentivized)
+  set regime-gain-coop 1.2           ;; Higher benefit for cooperation
+  set regime-coop-1-2 1.1            ;; Slightly favor black-to-red cooperation
+  set regime-coop-2-1 1.1            ;; Slightly favor red-to-black cooperation
+  set regime-same-policy 0.9         ;; High intra-group cooperation
+  set regime-different-policy 0.35   ;; Moderate inter-group cooperation
+  set regime-institution-policy 0    ;; Allows institutions but with oversight
+  ask people with [ color = black ] [
+    set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+  ]
+ ]
 
 
 end
@@ -537,19 +557,19 @@ NIL
 MONITOR
 199
 13
-256
-58
+257
+51
 regime
 current-regime
 17
 1
-11
+9
 
 BUTTON
 13
-112
+115
 76
-145
+148
 NIL
 go
 T
@@ -724,15 +744,15 @@ PENS
 "with-different?" 1.0 0 -4699768 true "" "plot count people with [ cooperate-with-different? = true ]"
 
 MONITOR
-271
-13
-897
-58
+263
+14
+899
+52
 Hear Ye! Hear Ye!
 current-regime-message
 17
 1
-11
+9
 
 @#$#@#$#@
 ## WHAT IS IT?
