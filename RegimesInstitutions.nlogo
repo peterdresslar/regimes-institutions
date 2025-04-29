@@ -259,7 +259,7 @@ end
 to immigrate
   let undercap-patches patches with [headroom > 0]
   ;; we can't have more immigrants than there are empty patches
-  let want-to-immigrate floor((random-float 1.0) * immigration-pressure)
+  let want-to-immigrate floor((random-float 1.0) * (immigration-pressure + institution-power))
   let can-immigrate floor( want-to-immigrate * regime-base-immigration )
   let how-many min list (can-immigrate) (count undercap-patches)
   ask n-of how-many undercap-patches [
@@ -271,7 +271,7 @@ to immigrate
 end
 
 to emigrate
-  let want-to-emigrate ceiling((random-float 1.0) * emigration-pressure)
+  let want-to-emigrate max (list ( ceiling ( (random-float 1.0) * (emigration-pressure - institution-power) ) ) 0)
   let need-emigrate ceiling(want-to-emigrate * regime-base-emigration)
   ask up-to-n-of need-emigrate people with [ color = red ] [
     die
@@ -280,7 +280,7 @@ to emigrate
 end
 
 to interact  ;; person procedure
-  ;; Dresslar: this code is signifcantly borrowed from Ethnocentrism, with the goal of maintaining some fidelity to that modelʻs
+  ;; This code is signifcantly borrowed from Ethnocentrism, with the goal of maintaining some fidelity to that modelʻs
   ;; approach. The changes are to ask people on-patch and neighbors. We also dampen benefit on very crowded patches.
   ;; Finally, we have a modification on the impact of cooperation based upon what the regime currently is.
 
@@ -326,7 +326,7 @@ to interact  ;; person procedure
       ifelse [cooperate-with-different?] of myself [
         set coopother coopother + 1
         set coopother-agg coopother-agg + 1
-        ask myself [ set ptr (ptr - (cost-of-giving * regime-cost-coop)) ] ;; Dresslar: regime modifier
+        ask myself [ set ptr (ptr - (cost-of-giving * regime-cost-coop)) ]   ;; Dresslar: regime modifier
         set ptr (ptr + ((gain-of-receiving * regime-gain-coop)))             ;; Dresslar: regime modifier
       ]
       [
@@ -485,7 +485,7 @@ to load-regime
   set regime-coop-2-1 1.1            ;; Slightly favor red-to-black cooperation
   set regime-same-policy 0.9         ;; High intra-group cooperation
   set regime-different-policy 0.35   ;; Moderate inter-group cooperation
-  set regime-institution-policy 0    ;; Allows institutions but with oversight
+  set regime-institution-policy 10   ;; Allows institutions but with oversight
   ask people with [ color = black ] [
     set cooperate-with-different? (random-float 1.0 < regime-different-policy)
   ]
