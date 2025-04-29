@@ -39,6 +39,10 @@ globals [
   ;; regime policies
   regime-base-immigration
   regime-base-emigration
+  regime-cost-coop
+  regime-gain-coop
+  regime-coop-1-2
+  regime-coop-2-1
 
 ]
 
@@ -62,6 +66,11 @@ to initialize-variables
 
   set regime-base-immigration 0
   set regime-base-emigration 0
+  set regime-cost-coop 0
+  set regime-gain-coop 0
+  set regime-coop-1-2 0
+  set regime-coop-2-1 0
+
 
   ;; ethno stats
   set meetown 0
@@ -271,8 +280,8 @@ to interact  ;; turtle procedure
       ifelse [cooperate-with-different?] of myself [
         set coopother coopother + 1
         set coopother-agg coopother-agg + 1
-        ask myself [ set ptr ptr - cost-of-giving ]
-        set ptr ptr + gain-of-receiving
+        ask myself [ set ptr (( ptr - cost-of-giving) * regime-cost-coop)) ]
+        set ptr (( ptr + gain-of-receiving ) * regime-gain-coop))
       ]
       [
         set defother defother + 1
@@ -290,9 +299,14 @@ to reproduce  ;; turtle procedure
     let destination one-of neighbors4 with [headroom > 0]
     if destination != nobody [
       ;; if the location exists hatch a copy of the current turtle in the new location
-      ;;  but mutate the child
       hatch 1 [
         move-to destination
+
+        ;; this offset just helps the agent be visible on the patch
+        let offset-magnitude 0.3 ;; How far from the center (max 0.5)
+        set xcor xcor + (random-float (2 * offset-magnitude)) - offset-magnitude
+        set ycor ycor + (random-float (2 * offset-magnitude)) - offset-magnitude
+
         ask patch-here [ update-headroom ]
         ;; mutate   (no mutation in this model, yet.)
       ]
@@ -321,11 +335,21 @@ to load-regime
   if current-regime = 1 [
     set regime-base-immigration .05
     set regime-base-emigration 1
+    set regime-cost-coop 1
+    set regime-gain-coop 1
+    set regime-coop-1-2 1
+    set regime-coop-2-1 1
+
   ]
 
   if current-regime = 2 [
     set regime-base-immigration .2
     set regime-base-emigration .1
+    set regime-cost-coop 1.25
+    set regime-gain-coop 0.75
+    set regime-coop-1-2 1
+    set regime-coop-2-1 1
+
 
   ]
 
@@ -529,7 +553,7 @@ death-rate
 death-rate
 .01
 1
-0.1
+0.12
 .01
 1
 NIL
