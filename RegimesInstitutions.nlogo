@@ -1,9 +1,15 @@
 ;; patches: gray (city), blue (river), green (plain), brown (hill)
 
-;; we will leverage some logic and concepts from http://ccl.northwestern.edu/netlogo/models/models/Sample%20Models/Social%20Science/Ethnocentrism.nlogo
+;; we will leverage significant logic and concepts from Ethnocentrism by Uri Wilensky (1997): http://ccl.northwestern.edu/netlogo/models/models/Sample%20Models/Social%20Science/Ethnocentrism.nlogo
+;; See notebook for citation
 
 ;; agents have a probablity to reproduce and a strategy
-turtles-own [ ptr cooperate-with-same? cooperate-with-different? ]
+breed [ people person ]
+breed [ institutions institution ]
+
+
+
+people-own [ ptr cooperate-with-same? cooperate-with-different? ]
 
 patches-own [
   is-city?
@@ -48,7 +54,7 @@ globals [
 
   ;; institutions
   formation-time
-  formation-threshold
+  formation-threshhold
   upgrade-time
   upgrade-threshhold
   community-radius
@@ -177,11 +183,11 @@ to seed-ethno1-pops
     ;; flip two coins, two heads = 1 agent
     set num-agents ( random 2 * random 2 )
   ]
-  sprout num-agents [
+  sprout-people num-agents [
     setup-ethno1-agent
   ]
   ;; for the patch we need to update headroom by subtracting the number of agents
-  set headroom max-cap - (count turtles-here)
+  set headroom max-cap - (count people-here)
 end
 
 to setup-ethno1-agent ;;; helper, mostly for visuals
@@ -217,11 +223,11 @@ to go
 
   immigrate
 
-  ask turtles [ set ptr base-ptr ]
+  ask people [ set ptr base-ptr ]
   ;; have all of the agents interact with other agents if they can
-  ask turtles [ interact ]
+  ask people [ interact ]
   ;; now they reproduce
-  ask turtles [ reproduce ]
+  ask people [ reproduce ]
 
   ;; ask patches [ check-anchors ]
 
@@ -243,7 +249,7 @@ to immigrate
   let can-immigrate floor( want-to-immigrate * regime-base-immigration )
   let how-many min list (can-immigrate) (count undercap-patches)
   ask n-of how-many undercap-patches [
-    sprout 1 [
+    sprout-people 1 [
       setup-ethno2-agent
       ask patch-here [ update-headroom ]
     ]
@@ -253,18 +259,18 @@ end
 to emigrate
   let want-to-emigrate ceiling((random-float 1.0) * emigration-pressure)
   let need-emigrate ceiling(want-to-emigrate * regime-base-emigration)
-  ask up-to-n-of need-emigrate turtles with [ color = red ] [
+  ask up-to-n-of need-emigrate people with [ color = red ] [
     die
     ask patch-here [ update-headroom ]
   ]
 end
 
-to interact  ;; turtle procedure
+to interact  ;; person procedure
   ;; Dresslar: this code is entirely borrowed from Ethnocentrism, with the goal of maintaining some fidelity to that modelʻs
-  ;; approach. The changes are to ask turtles on-patch and neighbors. We also dampen benefit on very crowded patches.
+  ;; approach. The changes are to ask people on-patch and neighbors. We also dampen benefit on very crowded patches.
   ;; Finally, we have a modification on the impact of cooperation based upon what the regime currently is.
 
-  ;; based on patch type turtles are given a maximum number of interactions per turn (distance between interactions)
+  ;; based on patch type people are given a maximum number of interactions per turn (distance between interactions)
   let current-patch patch-here
   let max-interactions 0
   let crowding 0.001
@@ -278,7 +284,7 @@ to interact  ;; turtle procedure
     set max-interactions 1
   ]
 
-  ask up-to-n-of max-interactions turtles at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] [
+  ask up-to-n-of max-interactions people at-points [[0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] [
     ;; the commands inside the ASK are written from the point of view
     ;; of the agent being interacted with.  To refer back to the agent
     ;; that initiated the interaction, we use the MYSELF primitive.
@@ -318,14 +324,14 @@ to interact  ;; turtle procedure
 end
 
 ;; use PTR to determine if the agent gets to reproduce
-to reproduce  ;; turtle procedure
+to reproduce  ;; person procedure
   ;; if a random variable is less than the PTR the agent can reproduce
   if random-float 1.0 < ptr [
     ;; find an empty location to reproduce into
     let destination one-of neighbors4 with [headroom > 0]
     if destination != nobody [
-      ;; if the location exists hatch a copy of the current turtle in the new location
-      hatch 1 [
+      ;; if the location exists hatch a copy of the current person in the new location
+      hatch-people 1 [
         move-to destination
 
         set cooperate-with-same? (random-float 1.0 < .5)  ;; deal with cooperators dying out automatically
@@ -344,7 +350,7 @@ end
 
 to death
   ;; check to see if a random variable is less than the death rate for each agent
-  ask turtles [
+  ask people [
     let crowding-ratio max(list 0.5 (current-population / total-capacity) )
     ;;let crowding (crowding-ratio - 0.5) ^ 6
     let crowding 0
@@ -372,7 +378,7 @@ to load-regime
     set regime-coop-2-1 1
     set regime-same-policy 0.8
     set regime-different-policy .02
-    ask turtles with [ color = black ] [
+    ask people with [ color = black ] [
       set cooperate-with-different? (random-float 1.0 < regime-different-policy)
     ]
 
@@ -388,7 +394,7 @@ to load-regime
     set regime-coop-2-1 1
     set regime-same-policy 0.8
     set regime-different-policy .20
-    ask turtles with [ color = black ] [
+    ask people with [ color = black ] [
       set cooperate-with-different? (random-float 1.0 < regime-different-policy)
     ]
 
@@ -399,11 +405,11 @@ to load-regime
 end
 
 to update-headroom
-  set headroom max-cap - ( count turtles-here )
+  set headroom max-cap - ( count people-here )
 end
 
 to-report current-pop
-  report count turtles
+  report count people
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
