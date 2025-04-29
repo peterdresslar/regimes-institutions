@@ -32,6 +32,7 @@ globals [
   ethno2-pop
   total-capacity
   current-population
+  institution-power
 
   ;; from ethocentrism stats
   meet
@@ -87,6 +88,7 @@ to initialize-variables
   set upgrade-time 200
   set upgrade-threshold 50
   set community-radius 10
+  set institution-power 0
 
   ;; regimes
   set current-regime-message "Long Live The King."
@@ -166,6 +168,9 @@ to show-patch-data
       ] ] ]
     [ user-message "Please load in patch data first." ]
   display
+
+  ;; finally, we are safe to dump patch-data
+  set patch-data 0
 end
 
 
@@ -382,6 +387,7 @@ to death-of-an-institution
     ]
     die
   ]
+  update-institution-power
 end
 
 
@@ -418,6 +424,8 @@ to check-institutions ;; observer procedure
      set ethno2-ticks 0 ;; Reset counter for this patch
     ]
   ]
+
+  update-institution-power
 
 end
 
@@ -465,6 +473,14 @@ to load-regime
 
 
 end
+
+to update-institution-power
+  ;; sum of institution levels (for each institution, i-p i-p + level)
+  ask institutions [
+    set institution-power institution-power + level
+  ]
+end
+
 
 to update-headroom
   set headroom max-cap - ( count people-here )
