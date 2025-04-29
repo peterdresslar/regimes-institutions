@@ -20,6 +20,7 @@ patches-own [
   max-cap
   headroom
   has-institution?
+  served-by-institution
   ethno2-ticks
 ]
 
@@ -152,6 +153,7 @@ to show-patch-data
     set is-hill? false
     set ethno2-ticks 0
     set has-institution? false
+    set served-by-institution 0
   ]
 
   ifelse ( is-list? patch-data )
@@ -367,8 +369,24 @@ to death
   ]
 end
 
+to death-of-an-institution
+  ask institutions [
+    ;; criteria here
+    ask patches with [ served-by-institution = self ] [
+      set served-by-institution 0
+    ]
+    ask patch-here [
+      set has-institution? false
+      set ethno2-ticks 0
+
+    ]
+    die
+  ]
+end
+
+
 to check-institutions ;; observer procedure
-  ask patches with [ not is-river? and not has-institution? ] [
+  ask patches with [ not is-river? and not has-institution? and served-by-institution = 0] [
     ;; count ethno2 nearby
     let ethno2-here people at-points [ [0 0] [0 1] [1 0] [-1 0] [0 -1] [1 1] [-1 -1] [1 -1] [-1 1] ] with [ color = red ]
     let num-ethno2 count ethno2-here
@@ -386,12 +404,18 @@ to check-institutions ;; observer procedure
     if ethno2-ticks >= formation-time [
       sprout-institutions 1 [
         set shape "house"
-        set size .8  ;; Adjust size as needed
-        set color white ;; Or another color to distinguish
-        ;; Institutions don't move, so no need for random offset
+        set size .8
+        set color white
+        set level 1
+        set tick-of-birth ticks
       ]
-      set has-institution? true
-      set ethno2-ticks 0 ;; Reset counter after formation
+
+     let new-institution one-of institutions-here ;; should be just 1
+     ;; Now ask the patches to store the 'who' number of the new institution
+     ask patches in-radius community-radius [ set served-by-institution [who] of new-institution ]
+     ;; Update the patch where the institution was sprouted
+     set has-institution? true
+     set ethno2-ticks 0 ;; Reset counter for this patch
     ]
   ]
 
