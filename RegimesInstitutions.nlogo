@@ -1,6 +1,6 @@
 ;; patches: gray (city), blue (river), green (plain), brown (hill)
 
-;; we will leverage significant logic and concepts from Ethnocentrism by Uri Wilensky (1997): http://ccl.northwestern.edu/netlogo/models/models/Sample%20Models/Social%20Science/Ethnocentrism.nlogo
+;; we will leverage significant logic and concepts from Ethnocentrism by Uri Wilensky (2003): http://ccl.northwestern.edu/netlogo/models/models/Sample%20Models/Social%20Science/Ethnocentrism.nlogo
 ;; See notebook for citation
 
 ;; agents have a probablity to reproduce and a strategy
@@ -259,7 +259,7 @@ end
 to immigrate
   let undercap-patches patches with [ headroom > 0 ]
   ;; we can't have more immigrants than there are empty patches
-  let world-crowding ( current-population / total-capacity ) ^ 6
+  let world-crowding ( current-population / total-capacity ) ^ 3
   let want-to-immigrate floor( (random-float ( 1.0  - world-crowding ) ) * (immigration-pressure + institution-power))
   let can-immigrate floor( want-to-immigrate * regime-base-immigration )
   let how-many min list ( can-immigrate ) ( count undercap-patches )
@@ -412,12 +412,14 @@ to interact  ;; person procedure
     ;; that initiated the interaction, we use the MYSELF primitive.
     set meet meet + 1
     set meet-agg meet-agg + 1
-
-    ifelse ( color = black ) [let ethno-myself ethno1] [let ethno-myself ethno2]
+    let this-interaction (list ([color] of myself) color)
     let my-ticks [ethno2-ticks] of patch-here
+    let cost-mod 0
+    let gain-mod 0
 
     ;; do one thing if the individual interacting is the same color as me
-    if color = [color] of myself [
+    if this-interaction = (list black black) [
+      ;; output-print (word "my-ticks: " my-ticks " this-interaction: " this-interaction)
       ;; record the fact the agent met someone of the own color
       set meetown meetown + 1
       set meetown-agg meetown-agg + 1
@@ -425,25 +427,74 @@ to interact  ;; person procedure
       if [cooperate-with-same?] of myself [
         set coopown coopown + 1
         set coopown-agg coopown-agg + 1
-        ask myself [ set ptr ptr - cost-of-giving ]
-        set ptr ptr + (gain-of-receiving)
+        if first this-interaction = black [
+          set cost-mod regime-cost-coop
+          set gain-mod regime-gain-coop
+        ]
+        ask myself [ set ptr ptr - (cost-of-giving * cost-mod) ]
+        set ptr ptr + (gain-of-receiving * gain-mod)
       ]
     ]
-    ;; if we are different colors we take a different strategy
-    if color != [color] of myself [
-      ;; record stats on encounters
+
+    if this-interaction = (list black red) [
+      ;; output-print (word "my-ticks: " my-ticks " this-interaction: " this-interaction)
+            ;; record stats on encounters
       set meetother meetother + 1
       set meetother-agg meetother-agg + 1
       ;; if we cooperate with different colors then reduce our PTR and increase our neighbors
       ifelse [cooperate-with-different?] of myself [
         set coopother coopother + 1
         set coopother-agg coopother-agg + 1
-        ask myself [ set ptr (ptr - (cost-of-giving * regime-cost-coop)) ]   ;; Dresslar: regime modifier
-        set ptr (ptr + ((gain-of-receiving * regime-gain-coop)))             ;; Dresslar: regime modifier
+        if first this-interaction = black [
+          set cost-mod regime-cost-coop
+          set gain-mod regime-gain-coop
+        ]
+        ask myself [ set ptr (ptr - (cost-of-giving * cost-mod)) ]   ;; Dresslar: regime modifier
+        set ptr ptr + (gain-of-receiving * gain-mod)                 ;; Dresslar: regime modifier
       ]
       [
         set defother defother + 1
         set defother-agg defother-agg + 1
+      ]
+    ]
+
+    if this-interaction = (list red black) [
+      ;; output-print (word "my-ticks: " my-ticks " this-interaction: " this-interaction)
+            ;; record stats on encounters
+      set meetother meetother + 1
+      set meetother-agg meetother-agg + 1
+      ;; if we cooperate with different colors then reduce our PTR and increase our neighbors
+      ifelse [cooperate-with-different?] of myself [
+        set coopother coopother + 1
+        set coopother-agg coopother-agg + 1
+        if first this-interaction = black [
+          set cost-mod regime-cost-coop
+          set gain-mod regime-gain-coop
+        ]
+        ask myself [ set ptr (ptr - (cost-of-giving * cost-mod)) ]   ;; Dresslar: regime modifier
+        set ptr ptr + (gain-of-receiving * gain-mod)                 ;; Dresslar: regime modifier
+      ]
+      [
+        set defother defother + 1
+        set defother-agg defother-agg + 1
+      ]
+    ]
+
+    if this-interaction = (list red red) [
+      ;; output-print (word "my-ticks: " my-ticks " this-interaction: " this-interaction)
+      ;; record the fact the agent met someone of the own color
+      set meetown meetown + 1
+      set meetown-agg meetown-agg + 1
+      ;; if I cooperate then I reduce my PTR and increase my neighbors
+      if [cooperate-with-same?] of myself [
+        set coopown coopown + 1
+        set coopown-agg coopown-agg + 1
+        if first this-interaction = black [
+          set cost-mod regime-cost-coop
+          set gain-mod regime-gain-coop
+        ]
+        ask myself [ set ptr ptr - (cost-of-giving * cost-mod) ]
+        set ptr ptr + (gain-of-receiving * gain-mod)
       ]
     ]
   ]
@@ -575,8 +626,8 @@ to load-regime
     set current-regime-message "His Majesty II will allow ethnicity2 to settle in certain areas of His Kingdom. They must follow His Edicts."
     set regime-base-immigration .2
     set regime-base-emigration .1
-    set regime-cost-coop 1.25
-    set regime-gain-coop 0.75
+    set regime-cost-coop 1.0
+    set regime-gain-coop 1.0
     set regime-coop-1-2 1
     set regime-coop-2-1 1
     set regime-same-policy 0.8
@@ -591,8 +642,8 @@ to load-regime
   set current-regime-message "Emperor Joseph II declares tolerance for all religious and ethnic minorities, but they must serve His greater glory."
   set regime-base-immigration 0.3    ;; More open to immigration
   set regime-base-emigration 0.1     ;; Some control but not preventing movement
-  set regime-cost-coop 0.8           ;; Lower cost for cooperation (incentivized)
-  set regime-gain-coop 1.2           ;; Higher benefit for cooperation
+  set regime-cost-coop 1.0           ;; Lower cost for cooperation (incentivized)
+  set regime-gain-coop 1.0           ;; Higher benefit for cooperation
   set regime-coop-1-2 1.1            ;; Slightly favor black-to-red cooperation
   set regime-coop-2-1 1.1            ;; Slightly favor red-to-black cooperation
   set regime-same-policy 0.9         ;; High intra-group cooperation
