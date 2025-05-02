@@ -65,7 +65,7 @@ globals [
   formation-threshold
   upgrade-time
   upgrade-threshold
-  community-radius
+  institution-radius
 
 ]
 
@@ -89,7 +89,7 @@ to initialize-variables
   set formation-threshold 10
   set upgrade-time 200
   set upgrade-threshold 50
-  set community-radius 20
+  set institution-radius 20
   set institution-power 0
 
   ;; regimes
@@ -251,6 +251,7 @@ to go
   check-institutions ;; call to review institution formation and status
 
   emigrate
+  death-of-an-institution
   death           ;; kill some of the agents
   ;;update-stats    ;; update the states for the aggregate and last 100 ticks
 
@@ -293,7 +294,7 @@ to immigrate
       repeat max-attempts [
         if not success? [
           ;; Calculate a location with normal distribution around institution
-          let dist random-normal community-radius (community-radius / 3)
+          let dist random-normal institution-radius (institution-radius / 3)
           let angle random-float 360
           let new-x institution-x + (dist * cos angle)
           let new-y institution-y + (dist * sin angle)
@@ -407,7 +408,6 @@ to interact  ;; person procedure
   ;; based on patch type people are given a maximum number of interactions per turn (distance between interactions)
   let current-patch patch-here
   let max-interactions 0
-  let crowding 0.001
   if [ is-city? ] of current-patch [
     set max-interactions 8
   ]
@@ -467,6 +467,26 @@ to interact  ;; person procedure
       [
         set defother defother + 1
         set defother-agg defother-agg + 1
+
+        ;; Dresslar: this new addition adds the ability for a non-cooperating (defector) ethno1 agent to actively reduce ethno2's ability to reproduce
+        let interacting_agent myself
+        let neighbor-rad patches in-radius 1.5
+        let neighbor-head sum [max-cap] of neighbor-rad
+        let neighbor-pop sum [max(list 0 (max-cap - headroom))] of neighbor-rad
+
+        ;; okay we have our headroom and our population, find crowding:
+
+        let crowding 0
+
+        if neighbor-head > 0 [
+          set crowding ( neighbor-pop / neighbor-head )
+        ]
+
+        let penalty-exp 4
+
+        let penalty-amount power-of-defection * (crowding ^ penalty-exp)
+
+        set ptr ptr - penalty-amount
       ]
     ]
 
@@ -486,7 +506,7 @@ to interact  ;; person procedure
         ask myself [ set ptr (ptr - (cost-of-giving * cost-mod)) ]   ;; Dresslar: regime modifier
         set ptr ptr + (gain-of-receiving * gain-mod)                 ;; Dresslar: regime modifier
       ]
-      [
+      [  ;; suppose that ethno2 by law/culture cannot push back on ethno1
         set defother defother + 1
         set defother-agg defother-agg + 1
       ]
@@ -538,6 +558,12 @@ to reproduce  ;; person procedure
 end
 
 to death
+  let ptr-threshold 0.0
+  ask people with [ ptr < ptr-threshold ] [
+      die
+      ask patch-here [ update-headroom ]
+  ]
+
   ;; check to see if a random variable is less than the death rate for each agent
   ask people [
     let crowding-ratio max(list 0.5 (current-population / total-capacity) )
@@ -551,6 +577,16 @@ to death
 end
 
 to death-of-an-institution
+  ask institutions [
+    set maintain maintain - regime-institution-policy ;; conscription, etc
+
+    ;; if the institution does not have nearby ethno2 it loses maintain
+    let ethno2-served people in-radius institution-radius with [color = red]
+    let num-ethno2 count ethno2-served
+    if num-ethno2 < formation-threshold [
+      set maintain maintain - 1
+    ]
+  ]
   ask institutions with [ maintain < 1 ] [
     ;; criteria here
     ask patches with [ served-by-institution = self ] [
@@ -595,7 +631,7 @@ to check-institutions ;; observer procedure
 
      let new-institution one-of institutions-here ;; should be just 1
      ;; Now ask the patches to store the 'who' number of the new institution
-     ask patches in-radius community-radius [ set served-by-institution [who] of new-institution ]
+     ask patches in-radius institution-radius [ set served-by-institution [who] of new-institution ]
      ;; Update the patch where the institution was sprouted
      set has-institution? true
      set ethno2-ticks 0 ;; Reset counter for this patch
@@ -784,7 +820,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-30.0
+50.0
 1
 1
 NIL
@@ -859,7 +895,7 @@ emigration-pressure
 emigration-pressure
 0
 100
-30.0
+50.0
 1
 1
 NIL
@@ -933,8 +969,8 @@ true
 true
 "" ""
 PENS
-"with-same?" 1.0 0 -13840069 true "" "plot (count people with [ cooperate-with-same? = true ]) / (count people) * 100"
-"with-different?" 1.0 0 -4699768 true "" "plot (count people with [ cooperate-with-different? = true ]) / (count people) * 100"
+"with-same?" 1.0 0 -13840069 true "" "plot (count people with [ color = black and cooperate-with-same? = true ]) / (count people with [ color = black ]) * 100"
+"with-different?" 1.0 0 -4699768 true "" "plot (count people with [ color = black and cooperate-with-different? = true ]) / (count people with [ color = black ]) * 100"
 
 MONITOR
 263
@@ -956,11 +992,45 @@ regime-change
 regime-change
 10
 1000
-500.0
+150.0
 10
 1
 NIL
 HORIZONTAL
+
+SLIDER
+10
+455
+189
+488
+power-of-defection
+power-of-defection
+0
+1
+0.02
+.01
+1
+NIL
+HORIZONTAL
+
+PLOT
+967
+655
+1245
+827
+ethno2 cooperators
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"with-same?" 1.0 0 -13840069 true "" "plot (count people with [ color = red and cooperate-with-same? = true ]) / (count people with [ color = red ]) * 100"
+"with-different?" 1.0 0 -5825686 true "" "plot (count people with [ color = red and cooperate-with-different? = true ]) / (count people with [ color = red ]) * 100"
 
 @#$#@#$#@
 ## WHAT IS IT?
