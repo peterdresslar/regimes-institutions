@@ -10,7 +10,7 @@ breed [ institutions institution ]
 
 
 people-own [ ptr cooperate-with-same? cooperate-with-different? ]
-institutions-own [ tick-of-birth level ]
+institutions-own [ tick-of-birth level maintain ]
 
 patches-own [
   is-city?
@@ -51,6 +51,7 @@ globals [
   ;; regime policies
   regime-base-immigration
   regime-base-emigration
+  regime-immigration-restriction?
   regime-cost-coop
   regime-gain-coop
   regime-coop-1-2
@@ -95,6 +96,7 @@ to initialize-variables
   set current-regime-message "Long Live The King."
   set regime-base-immigration 0
   set regime-base-emigration 0
+  set regime-immigration-restriction? True
   set regime-cost-coop 0
   set regime-gain-coop 0
   set regime-coop-1-2 0
@@ -233,7 +235,10 @@ to setup-ethno2-agent ;;; helper, mostly for visuals
 end
 
 to go
-  check-regime
+  if ticks > 0 [ check-regime ] ;; don't change regime on first tick
+
+  ;; if regime > 9, the simulation ends
+  if current-regime > 9 [ stop ]
 
   immigrate
 
@@ -259,6 +264,13 @@ end
 to immigrate
   let undercap-patches patches with [ headroom > 0 ]
   ;; we can't have more immigrants than there are empty patches
+
+  ;; if regime-immigration-restriction? is true, then immigration is restricted only to patches with negative xcor/ycor
+  ;; (similar to resttictions of a time to Alba Iulia region)
+  if regime-immigration-restriction? [
+    set undercap-patches patches with [ headroom > 0 and pxcor < 0 and pycor < 0 ]
+  ]
+
   let world-crowding ( current-population / total-capacity ) ^ 3
   let want-to-immigrate floor( (random-float ( 1.0  - world-crowding ) ) * (immigration-pressure + institution-power))
   let can-immigrate floor( want-to-immigrate * regime-base-immigration )
@@ -539,7 +551,7 @@ to death
 end
 
 to death-of-an-institution
-  ask institutions [
+  ask institutions with [ maintain < 1 ] [
     ;; criteria here
     ask patches with [ served-by-institution = self ] [
       set served-by-institution 0
@@ -554,7 +566,6 @@ to death-of-an-institution
   update-institution-power
 end
 
-
 to check-institutions ;; observer procedure
   ask patches with [ not is-river? and not has-institution? and served-by-institution = 0] [
     ;; count ethno2 nearby
@@ -565,7 +576,7 @@ to check-institutions ;; observer procedure
     ifelse num-ethno2 >= (formation-threshold + regime-institution-policy) [
       ;; If met, increment the counter
       set ethno2-ticks ethno2-ticks + 1
-      output-print (word "patch " self " has " num-ethno2 " ethno2")
+      ;; output-print (word "patch " self " has " num-ethno2 " ethno2")
     ] [
       ;; If not met, reset the counter
       set ethno2-ticks 0
@@ -579,6 +590,7 @@ to check-institutions ;; observer procedure
         set color white
         set level 1
         set tick-of-birth ticks
+        set maintain 100
       ]
 
      let new-institution one-of institutions-here ;; should be just 1
@@ -595,12 +607,9 @@ to check-institutions ;; observer procedure
 end
 
 to check-regime
-  if ticks = 100 [
-      set current-regime 2
-      load-regime
-  ]
-  if ticks = 200 [
-      set current-regime 3
+  ;; incrememnt regime change every regime-change ticks
+  if ticks mod regime-change = 0 [
+      set current-regime current-regime + 1
       load-regime
   ]
 end
@@ -610,6 +619,7 @@ to load-regime
     set current-regime-message "His Majesty sees no reason to allow ethnicity2 to sully His Kingdom"
     set regime-base-immigration .05
     set regime-base-emigration 1
+    set regime-immigration-restriction? True
     set regime-cost-coop 1
     set regime-gain-coop 1
     set regime-coop-1-2 1
@@ -626,6 +636,7 @@ to load-regime
     set current-regime-message "His Majesty II will allow ethnicity2 to settle in certain areas of His Kingdom. They must follow His Edicts."
     set regime-base-immigration .2
     set regime-base-emigration .1
+    set regime-immigration-restriction? True
     set regime-cost-coop 1.0
     set regime-gain-coop 1.0
     set regime-coop-1-2 1
@@ -640,19 +651,38 @@ to load-regime
 
  if current-regime = 3 [
   set current-regime-message "Emperor Joseph II declares tolerance for all religious and ethnic minorities, but they must serve His greater glory."
-  set regime-base-immigration 0.3    ;; More open to immigration
-  set regime-base-emigration 0.1     ;; Some control but not preventing movement
-  set regime-cost-coop 1.0           ;; Lower cost for cooperation (incentivized)
-  set regime-gain-coop 1.0           ;; Higher benefit for cooperation
-  set regime-coop-1-2 1.1            ;; Slightly favor black-to-red cooperation
-  set regime-coop-2-1 1.1            ;; Slightly favor red-to-black cooperation
-  set regime-same-policy 0.9         ;; High intra-group cooperation
-  set regime-different-policy 0.35   ;; Moderate inter-group cooperation
-  set regime-institution-policy 10   ;; Allows institutions but with oversight
+  set regime-base-immigration 0.3
+  set regime-base-emigration 0.1
+  set regime-immigration-restriction? True
+  set regime-cost-coop 1.0
+  set regime-gain-coop 1.0
+  set regime-coop-1-2 1.1
+  set regime-coop-2-1 1.1
+  set regime-same-policy 0.9
+  set regime-different-policy 0.35
+  set regime-institution-policy 10
   ask people with [ color = black ] [
     set cooperate-with-different? (random-float 1.0 < regime-different-policy)
   ]
  ]
+
+ if current-regime = 4 [
+  set current-regime-message "Location restrictions for settling ehtno2 migrants are hereby relaxed."
+  set regime-base-immigration 0.3
+  set regime-base-emigration 0.1
+  set regime-immigration-restriction? True
+  set regime-cost-coop 1.0
+  set regime-gain-coop 1.0
+  set regime-coop-1-2 1.1
+  set regime-coop-2-1 1.1
+  set regime-same-policy 0.9
+  set regime-different-policy 0.35
+  set regime-institution-policy 10
+  ask people with [ color = black ] [
+    set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+  ]
+ ]
+
 
 
 end
@@ -721,8 +751,8 @@ MONITOR
 199
 13
 257
-51
-regime
+50
+Regime
 current-regime
 17
 1
@@ -754,7 +784,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-20.0
+30.0
 1
 1
 NIL
@@ -829,7 +859,7 @@ emigration-pressure
 emigration-pressure
 0
 100
-20.0
+30.0
 1
 1
 NIL
@@ -910,12 +940,27 @@ MONITOR
 263
 14
 899
-52
-Hear Ye! Hear Ye!
+51
+Edict
 current-regime-message
 17
 1
 9
+
+SLIDER
+14
+720
+186
+753
+regime-change
+regime-change
+10
+1000
+500.0
+10
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?

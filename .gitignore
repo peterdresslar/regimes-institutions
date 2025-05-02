@@ -12,3 +12,6 @@ wheels/
 
 # NetLogo
 .*.nlogo
+
+# System files
+.DS_Store
