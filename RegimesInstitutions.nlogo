@@ -1126,15 +1126,50 @@ Black agents: ethnicity 1 Red agents: ethnicity 2
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+The historical Jewish community of the Transylvanian region of Romania developed from a start, putatively during the Dacian period and more assuredly during the early Middle Ages, of small numbers of Jewish mercantile families engaged in trade that cross through the region for millennia. Over time, despite what one author terms "hostile tolerance", real pockets of community developed, leading to the establishment of institutions and resultant further amplification of the community.
+
+The community in particular experienced a period of growth and prosperity during the 18th century, with further expansion during the 19th century, in response to the exogenous changes in regional power dynamics between the Habsburg Monarchy, the Ottoman Empire, Moldavia, Wallachia, and later Romania. In many cases, changes in the balance of regional power that had nothing specifically to do with the Jewish community did nonetheless lead to massive changes.
+
+This model is an exploration of the impact of region-wide "regime change" on otherwise endogenous processes of community development and inter-ethnic cooperation and conflict. In the model, we demonstrate how large shifts in the model factors, or even the rules themselves, can lead to community changes and amplify these changes through the enablement and destruction of institutional pillars such as synagogues and schools.
+
+The model borrows ethnographic and immigration concepts from the Netlogo Ethnocentrism model, which itself borrows game theoretic concepts from ideas like the Prisoner's Dilemma. As the familiar dynamics progress, we can see the impact of arbitrary shifts that were common in the region's history, and are likely representative of world history as a whole.
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+This model simulates interactions between two ethnic populations across different historical regimes. The world is divided into terrain types (city, plain, hill, river) with varying population capacities.
+
+Agents ("people") belong to one of two ethnic groups: ethno1 (black) or ethno2 (red). Each agent has:
+- A Probability To Reproduce (PTR)
+- Cooperation strategies for interactions with same-group and different-group members
+
+Key mechanisms:
+
+1. Regime Changes: Every `regime-change` ticks, the model progresses through historical periods, altering immigration rates, emigration rates, cooperation policies, and institution formation parameters.
+
+2. Interactions: Agents interact with neighbors, choosing to cooperate or defect based on their strategies. Cooperation costs the giver and benefits the receiver, while defection can penalize the target in crowded areas.
+
+3. Immigration/Emigration: Ethno2 agents immigrate based on regime policies, typically clustering around institutions or existing ethno2 populations. They cannot immigrate directly to hills but can reproduce there.
+
+4. Institutions: Form when sufficient ethno2 agents concentrate in an area for a sustained period. Institutions influence immigration patterns and persistence of ethno2 communities.
+
+5. Reproduction & Death: Agents with sufficient PTR can reproduce. Death occurs from low PTR, random chance, or crowding.
+
+The model examines how changing policies and demographic patterns affect ethnic diversity, cooperation, and population distribution across different terrain types.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+Several of the interface tools are borrowed from the Netlogo Ethnocentrism model, including:
+
+- PTR slider: controls the probability of reproduction for each agent
+- Cooperation cost/benefit sliders: control the probability of cooperation for same-group and different-group interactions
+- Death rate slider: controls the rate of death for each agent
+
+The following sliders are specific to this model:
+
+- Regime change slider: controls the frequency of regime changes in ticks.
+- Immigration/Emigration sliders: control the rate of immigration and emigration for ethno2 agents
+- Institutional pressure slider: controls the pressure for institution formation
+- Power of defection slider: controls the probability of defection for ethno2 agents
 
 ## THINGS TO NOTICE
 
