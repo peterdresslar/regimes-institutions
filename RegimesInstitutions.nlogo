@@ -651,75 +651,152 @@ to check-regime
 end
 
 to load-regime
+  ;; Regime 1 (~1725 - ~1780): Habsburg Pre-Reform
+  ;; Context: Early Habsburg rule. Jewish settlement largely restricted to Alba Iulia, under "hostile tolerance". Low population.
   if current-regime = 1 [
-    set current-regime-message "His Majesty sees no reason to allow ethnicity2 to sully His Kingdom"
-    set regime-base-immigration .05
-    set regime-base-emigration 1
-    set regime-immigration-restriction? True
-    set regime-cost-coop 1
-    set regime-gain-coop 1
-    set regime-coop-1-2 1
-    set regime-coop-2-1 1
-    set regime-same-policy 0.8
-    set regime-different-policy .02
-    set regime-institution-policy 999
-    ask people with [ color = black ] [
-      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
-    ]
-  ]
-
-  if current-regime = 2 [
-    set current-regime-message "His Majesty II will allow ethnicity2 to settle in certain areas of His Kingdom. They must follow His Edicts."
-    set regime-base-immigration .2
-    set regime-base-emigration .1
+    set current-regime-message "Early Habsburg rule. Ethno2 largely confined to specific areas under 'hostile tolerance'."
+    set regime-base-immigration 0.05
+    set regime-base-emigration 0.20
     set regime-immigration-restriction? True
     set regime-cost-coop 1.0
     set regime-gain-coop 1.0
-    set regime-coop-1-2 1
-    set regime-coop-2-1 1
-    set regime-same-policy 0.8
-    set regime-different-policy .20
-    set regime-institution-policy 20
+    set regime-different-policy 0.05 ;; Low majority tolerance
+    set regime-institution-policy 500 ;; High hostility/difficulty for institutions
     ask people with [ color = black ] [
       set cooperate-with-different? (random-float 1.0 < regime-different-policy)
     ]
   ]
 
- if current-regime = 3 [
-  set current-regime-message "Emperor Joseph II declares tolerance for all religious and ethnic minorities, but they must serve His greater glory."
-  set regime-base-immigration 0.3
-  set regime-base-emigration 0.1
-  set regime-immigration-restriction? True
-  set regime-cost-coop 1.0
-  set regime-gain-coop 1.0
-  set regime-coop-1-2 1.1
-  set regime-coop-2-1 1.1
-  set regime-same-policy 0.9
-  set regime-different-policy 0.35
-  set regime-institution-policy 10
-  ask people with [ color = black ] [
-    set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+  ;; Regime 2 (~1780 - ~1800): Joseph II Reforms
+  ;; Context: Era of Joseph II. Edict of Tolerance brings slight integration & rights, but limits remain, especially in Transylvania proper.
+  if current-regime = 2 [
+    set current-regime-message "Era of Joseph II. Edict of Tolerance brings slight integration, improved status, but limitations remain."
+    set regime-base-immigration 0.20
+    set regime-base-emigration 0.10
+    set regime-immigration-restriction? True ;; Still effectively restricted in Transylvania
+    set regime-cost-coop 1.0
+    set regime-gain-coop 1.0
+    set regime-different-policy 0.20 ;; Increased majority tolerance
+    set regime-institution-policy 100 ;; Still difficult, but less hostile
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
   ]
- ]
 
- if current-regime = 4 [
-  set current-regime-message "Location restrictions for settling ehtno2 migrants are hereby relaxed."
-  set regime-base-immigration 0.3
-  set regime-base-emigration 0.1
-  set regime-immigration-restriction? True
-  set regime-cost-coop 1.0
-  set regime-gain-coop 1.0
-  set regime-coop-1-2 1.1
-  set regime-coop-2-1 1.1
-  set regime-same-policy 0.9
-  set regime-different-policy 0.35
-  set regime-institution-policy 10
-  ask people with [ color = black ] [
-    set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+  ;; Regime 3 (~1800 - ~1840): Post-Joseph II / Pre-Reform Era
+  ;; Context: Emancipation debated. New communities forming outside Alba Iulia, slow population growth. Continued local struggles.
+  if current-regime = 3 [
+    set current-regime-message "Early 19th Century. Emancipation debated, new communities emerge, slow growth."
+    set regime-base-immigration 0.25
+    set regime-base-emigration 0.10
+    set regime-immigration-restriction? True ;; No formal change in Transylvanian Diet yet
+    set regime-cost-coop 1.0
+    set regime-gain-coop 1.0
+    set regime-different-policy 0.25 ;; Gradual increase in tolerance?
+    set regime-institution-policy 50 ;; Reduced hostility allows new communities
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
   ]
- ]
 
+  ;; Regime 4 (~1840 - 1848): Liberal Reforms / Pre-Revolution
+  ;; Context: Hungarian Diet reforms ease some restrictions (settlement, trade), but Transylvanian Diet lags. Population grows.
+  if current-regime = 4 [
+    set current-regime-message "Liberal reforms elsewhere ease some restrictions. Population grows. Emancipation discussed."
+    set regime-base-immigration 0.35
+    set regime-base-emigration 0.05
+    set regime-immigration-restriction? True ;; Transylvanian Diet inaction
+    set regime-cost-coop 1.0
+    set regime-gain-coop 1.0
+    set regime-different-policy 0.35 ;; Growing liberal sentiment
+    set regime-institution-policy 20 ;; Easier institution formation/maintenance
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+  ]
 
+  ;; Regime 5 (1848 - ~1867): Revolution & Neo-Absolutism
+  ;; Context: 1848 Revolution brings persecution. Neo-Absolutism (1849-60) revokes rights. Difficult period.
+  if current-regime = 5 [
+    set current-regime-message "1848 Revolution brings persecution. Neo-Absolutism revokes rights. Hardship increases."
+    set regime-base-immigration 0.10
+    set regime-base-emigration 0.30 ;; Increased pressure to leave
+    set regime-immigration-restriction? True ;; Likely reinforced
+    set regime-cost-coop 1.2
+    set regime-gain-coop 0.8
+    set regime-different-policy 0.15 ;; Backlash, reduced tolerance
+    set regime-institution-policy 200 ;; Increased hostility to institutions
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+  ]
+
+  ;; Regime 6 (~1867 - ~1900): Emancipation Era
+  ;; Context: Austro-Hungarian Compromise grants full Civil Emancipation (1867). Population booms, institutions flourish.
+  if current-regime = 6 [
+    set current-regime-message "Age of Emancipation (post-1867). Full civil rights granted. Population booms, institutions flourish."
+    set regime-base-immigration 0.50 ;; High immigration, peak integration
+    set regime-base-emigration 0.02 ;; Minimal pressure
+    set regime-immigration-restriction? False ;; Restrictions lifted
+    set regime-cost-coop 1.0
+    set regime-gain-coop 1.0
+    set regime-different-policy 0.70 ;; Peak tolerance
+    set regime-institution-policy -50 ;; Supportive/Tolerant (negative value aids formation/maintenance)
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+  ]
+
+  ;; Regime 7 (~1900 - 1918): Pre-WWI / Turn of Century
+  ;; Context: Established communities, but rising friction and nationalism preceding WWI. Emigration (Zionism) begins.
+  if current-regime = 7 [
+    set current-regime-message "Early 20th Century. Established communities, but rising friction precedes WWI. Emigration begins."
+    set regime-base-immigration 0.40 ;; Still strong, perhaps slowing
+    set regime-base-emigration 0.05 ;; Slightly increased emigration
+    set regime-immigration-restriction? False
+    set regime-cost-coop 1.0
+    set regime-gain-coop 1.0
+    set regime-different-policy 0.60 ;; Slight decline in tolerance?
+    set regime-institution-policy 0 ;; Neutral regime stance
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+  ]
+
+  ;; Regime 8 (1919 - ~1939): Interwar Romania
+  ;; Context: Transylvania part of Romania. Initial rights confirmed, but rising anti-Semitism, restrictive laws (1934, 1937), increased emigration.
+  if current-regime = 8 [
+    set current-regime-message "Interwar Romania. Rising anti-Semitism, restrictive laws, increasing emigration."
+    set regime-base-immigration 0.15 ;; Unfavorable conditions
+    set regime-base-emigration 0.40 ;; Significant emigration pressure
+    set regime-immigration-restriction? False
+    set regime-cost-coop 1.1
+    set regime-gain-coop 0.9
+    set regime-different-policy 0.25 ;; Sharp decline in tolerance
+    set regime-institution-policy 300 ;; Increasing hostility towards institutions
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+  ]
+
+  ;; Regime 9 (~1940 - 1945): WWII / Holocaust in Northern Transylvania
+  ;; Context: N. Transylvania under Hungary/Germany. Racial laws, ghettoization, mass deportations to Auschwitz (1944). Community destroyed.
+  if current-regime = 9 [
+    set current-regime-message "WWII: Northern Transylvania under Hungary/Germany. Deportations to Auschwitz (1944). Community destroyed."
+    set regime-base-immigration 0.00 ;; None
+    set regime-base-emigration 1.0 ;; Maximum (deportation/death)
+    set regime-immigration-restriction? True ;; Ghettoization
+    set regime-cost-coop 1.5 ;; Extreme hardship
+    set regime-gain-coop 0.5
+    set regime-different-policy 0.01 ;; Near zero tolerance/cooperation
+    set regime-institution-policy 1000 ;; Extreme hostility, destruction
+    ask people with [ color = black ] [
+      set cooperate-with-different? (random-float 1.0 < regime-different-policy)
+    ]
+    ;; Consider adding a command here to kill off a large percentage of ethno2 immediately
+    ;; ask n-of (count people with [color = red] * 0.9) people with [color = red] [ die ]
+    ;; Or implement deportation logic elsewhere triggered by this regime
+  ]
 
 end
 
@@ -820,7 +897,7 @@ immigration-pressure
 immigration-pressure
 0
 100
-50.0
+30.0
 1
 1
 NIL
@@ -895,7 +972,7 @@ emigration-pressure
 emigration-pressure
 0
 100
-50.0
+30.0
 1
 1
 NIL
@@ -992,7 +1069,7 @@ regime-change
 regime-change
 10
 1000
-150.0
+200.0
 10
 1
 NIL
@@ -1007,7 +1084,7 @@ power-of-defection
 power-of-defection
 0
 1
-0.02
+0.1
 .01
 1
 NIL
@@ -1029,8 +1106,8 @@ true
 true
 "" ""
 PENS
-"with-same?" 1.0 0 -13840069 true "" "plot (count people with [ color = red and cooperate-with-same? = true ]) / (count people with [ color = red ]) * 100"
-"with-different?" 1.0 0 -5825686 true "" "plot (count people with [ color = red and cooperate-with-different? = true ]) / (count people with [ color = red ]) * 100"
+"with-same?" 1.0 0 -13840069 true "" "plot (count people with [ color = red and cooperate-with-same? = true ]) / (.00001 + (count people with [ color = red ])) * 100"
+"with-different?" 1.0 0 -5825686 true "" "plot (count people with [ color = red and cooperate-with-different? = true ]) / (.0001 + (count people with [ color = red ])) * 100"
 
 @#$#@#$#@
 ## WHAT IS IT?
