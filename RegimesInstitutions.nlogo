@@ -263,7 +263,11 @@ end
 
 ;; individuals of ethno2 enter world under certain regime-influenced conditions
 to immigrate
-  let undercap-patches patches with [ headroom > 0 ]
+  let undercap-patches patches with [ headroom > 0 and not is-hill? ]  ;; Exclude hill areas as default target
+  if random-float 1.0 < 0.05 [  ;; Only 10% chance to even consider hills
+    set undercap-patches (patch-set undercap-patches (patches with [ is-hill? and headroom > 0 ]))
+  ]
+
   ;; we can't have more immigrants than there are empty patches
 
   ;; if regime-immigration-restriction? is true, then immigration is restricted only to patches with negative xcor/ycor
@@ -301,7 +305,7 @@ to immigrate
 
           ;; Check if patch exists and has headroom
           let target-patch patch new-x new-y
-          if target-patch != nobody and [headroom > 0] of target-patch [
+          if target-patch != nobody and [ headroom > 0 and not is-hill? ] of target-patch [
             ask target-patch [
               sprout-people 1 [
                 setup-ethno2-agent
@@ -603,7 +607,7 @@ to death-of-an-institution
 end
 
 to check-institutions ;; observer procedure
-  ask patches with [ not is-river? and not has-institution? and served-by-institution = 0] [
+  ask patches with [ not is-river? and not is-hill? and not has-institution? and served-by-institution = 0] [
     ;; count ethno2 nearby
     let ethno2-here people in-radius 1.5 with [color = red]
     let num-ethno2 count ethno2-here
@@ -654,7 +658,7 @@ to load-regime
   ;; Regime 1 (~1725 - ~1780): Habsburg Pre-Reform
   ;; Context: Early Habsburg rule. Jewish settlement largely restricted to Alba Iulia, under "hostile tolerance". Low population.
   if current-regime = 1 [
-    set current-regime-message "Early Habsburg rule. Ethno2 largely confined to specific areas under 'hostile tolerance'."
+    set current-regime-message "Ethno2 largely confined to specific areas under 'hostile tolerance'."
     set regime-base-immigration 0.05
     set regime-base-emigration 0.20
     set regime-immigration-restriction? True
@@ -670,7 +674,7 @@ to load-regime
   ;; Regime 2 (~1780 - ~1800): Joseph II Reforms
   ;; Context: Era of Joseph II. Edict of Tolerance brings slight integration & rights, but limits remain, especially in Transylvania proper.
   if current-regime = 2 [
-    set current-regime-message "Era of Joseph II. Edict of Tolerance brings slight integration, improved status, but limitations remain."
+    set current-regime-message "Edict of Tolerance brings slight integration, improved status, but limitations remain."
     set regime-base-immigration 0.20
     set regime-base-emigration 0.10
     set regime-immigration-restriction? True ;; Still effectively restricted in Transylvania
@@ -718,7 +722,7 @@ to load-regime
   ;; Regime 5 (1848 - ~1867): Revolution & Neo-Absolutism
   ;; Context: 1848 Revolution brings persecution. Neo-Absolutism (1849-60) revokes rights. Difficult period.
   if current-regime = 5 [
-    set current-regime-message "1848 Revolution brings persecution. Neo-Absolutism revokes rights. Hardship increases."
+    set current-regime-message "Revolution brings persecution. Neo-Absolutism revokes rights. Hardship increases."
     set regime-base-immigration 0.10
     set regime-base-emigration 0.30 ;; Increased pressure to leave
     set regime-immigration-restriction? True ;; Likely reinforced
@@ -750,7 +754,7 @@ to load-regime
   ;; Regime 7 (~1900 - 1918): Pre-WWI / Turn of Century
   ;; Context: Established communities, but rising friction and nationalism preceding WWI. Emigration (Zionism) begins.
   if current-regime = 7 [
-    set current-regime-message "Early 20th Century. Established communities, but rising friction precedes WWI. Emigration begins."
+    set current-regime-message "Early 20th Century. Established communities, but rising friction precedes wartime. Emigration begins."
     set regime-base-immigration 0.40 ;; Still strong, perhaps slowing
     set regime-base-emigration 0.05 ;; Slightly increased emigration
     set regime-immigration-restriction? False
@@ -766,7 +770,7 @@ to load-regime
   ;; Regime 8 (1919 - ~1939): Interwar Romania
   ;; Context: Transylvania part of Romania. Initial rights confirmed, but rising anti-Semitism, restrictive laws (1934, 1937), increased emigration.
   if current-regime = 8 [
-    set current-regime-message "Interwar Romania. Rising anti-Semitism, restrictive laws, increasing emigration."
+    set current-regime-message "Interwar period. Rising anti-ethno2 sentiment, government-sponsored institutional persecution."
     set regime-base-immigration 0.15 ;; Unfavorable conditions
     set regime-base-emigration 0.40 ;; Significant emigration pressure
     set regime-immigration-restriction? False
@@ -782,7 +786,7 @@ to load-regime
   ;; Regime 9 (~1940 - 1945): WWII / Holocaust in Northern Transylvania
   ;; Context: N. Transylvania under Hungary/Germany. Racial laws, ghettoization, mass deportations to Auschwitz (1944). Community destroyed.
   if current-regime = 9 [
-    set current-regime-message "WWII: Northern Transylvania under Hungary/Germany. Deportations to Auschwitz (1944). Community destroyed."
+    set current-regime-message "Wartime and conquest. Ethno2 outlawed as persons. Deportations to camps."
     set regime-base-immigration 0.00 ;; None
     set regime-base-emigration 1.0 ;; Maximum (deportation/death)
     set regime-immigration-restriction? True ;; Ghettoization
@@ -817,9 +821,9 @@ to-report current-pop
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-201
+213
 65
-898
+910
 763
 -1
 -1
@@ -844,10 +848,10 @@ days
 30.0
 
 BUTTON
-15
-68
-81
-101
+11
+179
+195
+212
 NIL
 setup
 NIL
@@ -861,10 +865,10 @@ NIL
 1
 
 MONITOR
-199
-13
-257
-50
+211
+14
+269
+51
 Regime
 current-regime
 17
@@ -872,10 +876,10 @@ current-regime
 9
 
 BUTTON
-13
-115
-76
-148
+11
+224
+195
+257
 NIL
 go
 T
@@ -890,24 +894,9 @@ NIL
 
 SLIDER
 10
-264
-200
-297
-immigration-pressure
-immigration-pressure
-0
-100
-30.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-16
-182
-188
-215
+269
+195
+302
 base-PTR
 base-PTR
 0.01
@@ -919,10 +908,55 @@ NIL
 HORIZONTAL
 
 SLIDER
-15
-373
-187
-406
+10
+309
+195
+342
+death-rate
+death-rate
+.01
+1
+0.14
+.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+10
+349
+195
+382
+immigration-pressure
+immigration-pressure
+0
+100
+30.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+10
+389
+195
+422
+emigration-pressure
+emigration-pressure
+0
+100
+30.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+10
+429
+195
+462
 cost-of-giving
 cost-of-giving
 0.01
@@ -934,10 +968,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-12
-413
-184
-446
+10
+469
+195
+502
 gain-of-receiving
 gain-of-receiving
 0.01
@@ -949,10 +983,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-5
-516
-194
+10
+509
+195
+542
+power-of-defection
+power-of-defection
+0
+1
+0.1
+.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+10
 549
+195
+582
 institutional-pressure
 institutional-pressure
 0
@@ -963,27 +1012,12 @@ institutional-pressure
 NIL
 HORIZONTAL
 
-SLIDER
-5
-305
-192
-338
-emigration-pressure
-emigration-pressure
-0
-100
-30.0
-1
-1
-NIL
-HORIZONTAL
-
 PLOT
-25
-565
-185
-697
-density
+929
+84
+1207
+216
+overall density
 NIL
 NIL
 0.0
@@ -996,26 +1030,11 @@ false
 PENS
 "default" 1.0 0 -8020277 true "" "plot 100 * current-population / total-capacity"
 
-SLIDER
-18
-226
-191
-259
-death-rate
-death-rate
-.01
-1
-0.14
-.01
-1
-NIL
-HORIZONTAL
-
 PLOT
-964
-216
-1164
-366
+931
+231
+1208
+381
 ethnicity counts
 NIL
 NIL
@@ -1031,10 +1050,10 @@ PENS
 "pen-1" 1.0 0 -5298144 true "" "plot count turtles with [ color = red ]"
 
 PLOT
-966
-441
-1243
-629
+931
+394
+1208
+582
 cooperators
 NIL
 NIL
@@ -1050,9 +1069,9 @@ PENS
 "with-different?" 1.0 0 -4699768 true "" "plot (count people with [ color = black and cooperate-with-different? = true ]) / (count people with [ color = black ]) * 100"
 
 MONITOR
-263
+275
 14
-899
+911
 51
 Edict
 current-regime-message
@@ -1061,10 +1080,10 @@ current-regime-message
 9
 
 SLIDER
-14
-720
-186
-753
+17
+13
+189
+46
 regime-change
 regime-change
 10
@@ -1075,26 +1094,11 @@ regime-change
 NIL
 HORIZONTAL
 
-SLIDER
-10
-455
-189
-488
-power-of-defection
-power-of-defection
-0
-1
-0.1
-.01
-1
-NIL
-HORIZONTAL
-
 PLOT
-967
-655
-1245
-827
+931
+590
+1209
+762
 ethno2 cooperators
 NIL
 NIL
@@ -1108,6 +1112,16 @@ true
 PENS
 "with-same?" 1.0 0 -13840069 true "" "plot (count people with [ color = red and cooperate-with-same? = true ]) / (.00001 + (count people with [ color = red ])) * 100"
 "with-different?" 1.0 0 -5825686 true "" "plot (count people with [ color = red and cooperate-with-different? = true ]) / (.0001 + (count people with [ color = red ])) * 100"
+
+TEXTBOX
+24
+107
+174
+135
+Black agents: ethnicity 1 Red agents: ethnicity 2
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
