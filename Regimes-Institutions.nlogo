@@ -1054,7 +1054,7 @@ PLOT
 394
 1208
 582
-cooperators
+ethno1-cooperators
 NIL
 NIL
 0.0
@@ -1173,11 +1173,11 @@ The following sliders are specific to this model:
 
 ## THINGS TO NOTICE
 
-(suggested things for the user to notice while running the model)
+Notice that certain cells will tend to be "dead" in many--but not all!--repetitions of the model.
 
 ## THINGS TO TRY
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+Note that you can make a very strong impact on model equilibria using the cost- and benefit- sliders. It also can be interesting to see what the smallest possible regime-change values might be before the various step equilibria are disrupted entirely.
 
 ## EXTENDING THE MODEL
 
@@ -1189,11 +1189,19 @@ The following sliders are specific to this model:
 
 ## RELATED MODELS
 
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+Discussesd below.
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Wilensky, U. (2003). NetLogo Ethnocentrism model. http://ccl.northwestern.edu/netlogo/models/Ethnocentrism. Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
+
+Wilensky, U. (1999). NetLogo. http://ccl.northwestern.edu/netlogo/. Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
+
+Please note that the Ethnocentrism model includes the following message:
+
+This model is a NetLogo version of the ethnocentrism model presented by Robert Axelrod at Northwestern University at the NICO (Northwestern Institute on Complex Systems) conference on October 25th, 2003.
+
+See also Ross A. Hammond and Robert Axelrod, The Evolution of Ethnocentrism, http://www-personal.umich.edu/~axe/research/AxHamm_Ethno.pdf
 @#$#@#$#@
 default
 true
