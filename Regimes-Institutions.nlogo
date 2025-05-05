@@ -1202,6 +1202,8 @@ Please note that the Ethnocentrism model includes the following message:
 This model is a NetLogo version of the ethnocentrism model presented by Robert Axelrod at Northwestern University at the NICO (Northwestern Institute on Complex Systems) conference on October 25th, 2003.
 
 See also Ross A. Hammond and Robert Axelrod, The Evolution of Ethnocentrism, http://www-personal.umich.edu/~axe/research/AxHamm_Ethno.pdf
+
+Original map data from Open Street Map. https://openstreetmap.org
 @#$#@#$#@
 default
 true
